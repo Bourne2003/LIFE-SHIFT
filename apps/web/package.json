@@ -1,0 +1,22 @@
+{
+  "name": "@life-shift/web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "LIFE SHIFT browser client (Phaser 3 + Vite).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:lan": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@life-shift/shared": "*",
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

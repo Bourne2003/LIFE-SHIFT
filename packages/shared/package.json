@@ -1,0 +1,13 @@
+{
+  "name": "@life-shift/shared",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Engine-agnostic types, constants and pure game logic shared by client and server.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}
