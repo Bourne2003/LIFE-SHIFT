@@ -1,23 +1,27 @@
-import { activeQuestIds, currentObjective, type QuestNotice } from '@life-shift/shared';
-import type { GameServices } from '../game/services';
+import { activeQuestIds, currentObjective, type GameNotice } from '@life-shift/shared';
 import type { DialogueView } from '../game/DialogueController';
+import { formatMoney, itemName } from '../game/format';
+import type { GameServices } from '../game/services';
+import { mountBag } from './bag';
 import { el } from './dom';
 import { mountMenu } from './menu';
+import { mountShop } from './shop';
 import './ui.css';
 
 /**
- * The DOM UI drawn over the canvas: hint, quest tracker, toasts, action button and dialogue.
+ * The DOM UI drawn over the canvas: HUD buttons (menu, bag), hint, quest tracker, toasts,
+ * action button, dialogue, and the menu / bag / shop panels.
  * DOM rather than Phaser text for crisp type on high-DPI phones, real buttons, accessibility
  * and responsive CSS (see docs/decisions/ADR-003-dom-ui-overlay.md). Components re-render only
  * when the services report a change — never per frame.
  */
 export function mountUi(root: HTMLElement, services: GameServices): () => void {
-  const { session, dialogue, world, input, content } = services;
+  const { session, dialogue, world, input, content, ui } = services;
   const cleanups: (() => void)[] = [];
 
   // --- Controls hint ------------------------------------------------------------------------
   const hint = el('div', { className: 'ui-hint ui-panel' }, [
-    el('span', { className: 'when-fine', text: 'WASD / arrows to move · E to talk' }),
+    el('span', { className: 'when-fine', text: 'WASD / arrows to move · E to talk · I for bag' }),
     el('span', { className: 'when-coarse', text: 'Drag on the left to move · tap Talk' }),
   ]);
   const hideHint = window.setTimeout(() => hint.classList.add('is-hidden'), 8000);
@@ -54,7 +58,15 @@ export function mountUi(root: HTMLElement, services: GameServices): () => void {
     toasts.append(node);
     window.setTimeout(() => node.remove(), 3500);
   };
-  cleanups.push(session.on('notice', (n) => toast(noticeText(n, services), `is-${n.type}`)));
+  cleanups.push(
+    session.on('notice', (n) => {
+      // The shop panel reports its own trades; don't repeat them as toasts.
+      const trade =
+        n.type === 'itemsReceived' || n.type === 'itemsRemoved' || n.type === 'moneyChanged';
+      if (trade && ui.modal === 'shop') return;
+      toast(noticeText(n, services), `is-${n.type}`);
+    }),
+  );
   cleanups.push(
     world.on('areaEntered', (loc) =>
       toast(loc.hidden ? `Discovered: ${loc.name}` : loc.name, 'is-area'),
@@ -78,7 +90,7 @@ export function mountUi(root: HTMLElement, services: GameServices): () => void {
     actionLabel.textContent = target
       ? `${target.kind === 'npc' ? 'Talk to' : 'Look at'} ${target.name}`
       : '';
-    action.classList.toggle('is-hidden', !target || dialogue.active || services.ui.menuOpen);
+    action.classList.toggle('is-hidden', !target || dialogue.active || ui.modal !== null);
   };
   cleanups.push(
     world.on('interactTarget', (t) => {
@@ -125,38 +137,74 @@ export function mountUi(root: HTMLElement, services: GameServices): () => void {
   };
   cleanups.push(dialogue.on('change', renderDialogue));
 
-  // Number keys pick dialogue choices.
+  // Keyboard: number keys pick dialogue choices, I toggles the bag, Esc closes any panel.
   const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && ui.modal) return ui.close();
+    if (
+      e.key.toLowerCase() === 'i' &&
+      !dialogue.active &&
+      (ui.modal === null || ui.modal === 'bag')
+    ) {
+      return ui.toggle('bag');
+    }
     const view = dialogue.view();
     const n = Number(e.key);
-    if (!view || !Number.isInteger(n) || n < 1) return;
+    if (!view || ui.modal || !Number.isInteger(n) || n < 1) return;
     const choice = view.choices[n - 1];
     if (choice) dialogue.choose(choice.index);
   };
   window.addEventListener('keydown', onKey);
   cleanups.push(() => window.removeEventListener('keydown', onKey));
 
-  // --- Menu (save / load / new game) -------------------------------------------------------
-  const menu = mountMenu(services, toast, () => renderAction());
-  cleanups.push(menu.destroy);
+  // --- Panels: menu (save / load / new game), bag, shop --------------------------------------
+  const menu = mountMenu(services, toast);
+  const bag = mountBag(services);
+  const shop = mountShop(services);
+  cleanups.push(menu.destroy, bag.destroy, shop.destroy, ui.on('modal', renderAction));
 
-  root.replaceChildren(hint, tracker, toasts, action, box, ...menu.elements);
+  const [menuButton, ...menuPanels] = menu.elements;
+  const [bagButton, ...bagPanels] = bag.elements;
+  const hud = el('div', { className: 'ui-hud' }, [menuButton!, bagButton!]);
+
+  root.replaceChildren(
+    hud,
+    hint,
+    tracker,
+    toasts,
+    action,
+    box,
+    ...menuPanels,
+    ...bagPanels,
+    ...shop.elements,
+  );
   return () => {
     cleanups.forEach((c) => c());
     root.replaceChildren();
   };
 }
 
-function noticeText(notice: QuestNotice, { content }: GameServices): string {
-  const quest = content.quests[notice.quest];
+function noticeText(notice: GameNotice, { content }: GameServices): string {
+  const title = (id: string) => content.quests[id]?.title ?? id;
   switch (notice.type) {
     case 'questStarted':
-      return `New quest: ${quest?.title}`;
-    case 'objectiveCompleted':
-      return `✓ ${quest?.objectives.find((o) => o.id === notice.objective)?.description}`;
+      return `New quest: ${title(notice.quest)}`;
+    case 'objectiveCompleted': {
+      const objective = content.quests[notice.quest]?.objectives.find(
+        (o) => o.id === notice.objective,
+      );
+      return `✓ ${objective?.description ?? notice.objective}`;
+    }
     case 'questCompleted':
-      return `Quest complete: ${quest?.title}`;
+      return `Quest complete: ${title(notice.quest)}`;
     case 'questFailed':
-      return `Quest failed: ${quest?.title}`;
+      return `Quest failed: ${title(notice.quest)}`;
+    case 'itemsReceived':
+      return `+${notice.quantity} ${itemName(content, notice.item)}`;
+    case 'itemsRemoved':
+      return `−${notice.quantity} ${itemName(content, notice.item)}`;
+    case 'bagFull':
+      return `Bag full — ${notice.quantity} ${itemName(content, notice.item)} left behind`;
+    case 'moneyChanged':
+      return `${notice.amount > 0 ? '+' : ''}${formatMoney(content, notice.amount)}`;
   }
 }

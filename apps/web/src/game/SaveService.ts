@@ -1,7 +1,7 @@
 import {
-  createInitialState,
   createSave,
   loadSave,
+  newGameState,
   type GameContent,
   type SaveData,
   type TilePos,
@@ -169,7 +169,7 @@ export class SaveService extends Emitter<SaveEvents> {
     }
     this._lastSavedAt = null;
     this.lastTile = this.session.content.map.spawn;
-    this.session.replaceState(createInitialState());
+    this.session.replaceState(newGameState(this.session.content));
     this.player?.teleport(this.lastTile);
     this.emit('status', { kind: 'reset' });
   }

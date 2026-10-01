@@ -1,21 +1,24 @@
 import {
   applyEffects,
-  createInitialState,
+  buy,
   handleGameEvent,
+  newGameState,
+  sell,
   type Effect,
   type GameContent,
   type GameEvent,
   type GameState,
+  type GameNotice,
   type Outcome,
-  type QuestNotice,
+  type TradeResult,
 } from '@life-shift/shared';
 import { Emitter } from './events';
 
 export interface SessionEvents {
   /** Fired after every change to the game state. */
   state: GameState;
-  /** Fired for every quest notice, in order. */
-  notice: QuestNotice;
+  /** Fired for every notice (quests, items, money), in order. */
+  notice: GameNotice;
 }
 
 /**
@@ -28,7 +31,7 @@ export class GameSession extends Emitter<SessionEvents> {
 
   constructor(
     readonly content: GameContent,
-    initial: GameState = createInitialState(),
+    initial: GameState = newGameState(content),
   ) {
     super();
     this._state = initial;
@@ -47,10 +50,24 @@ export class GameSession extends Emitter<SessionEvents> {
     this.commit(handleGameEvent(this._state, this.content, event));
   }
 
+  /** Buys from a shop. The shared rules decide; a refusal changes nothing. */
+  buy(shop: string, item: string, quantity: number): TradeResult {
+    return this.trade(buy(this._state, this.content, shop, item, quantity));
+  }
+
+  sell(shop: string, item: string, quantity: number): TradeResult {
+    return this.trade(sell(this._state, this.content, shop, item, quantity));
+  }
+
   /** Swaps in a whole new state (load game, new game). Emits `state` but no notices. */
   replaceState(state: GameState): void {
     this._state = state;
     this.emit('state', this._state);
+  }
+
+  private trade(result: TradeResult): TradeResult {
+    if (result.ok) this.commit(result);
+    return result;
   }
 
   private commit(outcome: Outcome): void {

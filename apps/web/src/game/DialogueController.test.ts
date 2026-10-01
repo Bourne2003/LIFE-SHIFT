@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { loadContent } from '@life-shift/game-data';
-import type { QuestNotice } from '@life-shift/shared';
+import { countItem, type GameNotice } from '@life-shift/shared';
 import { DialogueController, talkerFromNpc, talkerFromObject } from './DialogueController';
 import { GameSession } from './GameSession';
 
@@ -10,7 +10,7 @@ const npc = (id: string) => talkerFromNpc(content.npcs.find((n) => n.id === id)!
 function setup() {
   const session = new GameSession(content);
   const dialogue = new DialogueController(session);
-  const notices: QuestNotice[] = [];
+  const notices: GameNotice[] = [];
   session.on('notice', (n) => notices.push(n));
   return { session, dialogue, notices };
 }
@@ -56,6 +56,7 @@ describe('DialogueController with the shipped content', () => {
       'objectiveCompleted',
       'objectiveCompleted',
       'questCompleted',
+      'moneyChanged', // reward
     ]);
 
     // Afterwards Noi has new things to say.
@@ -109,13 +110,17 @@ describe('Fresh Ingredients: consequences and memory', () => {
     dialogue.start(npc('mali'));
     expect(dialogue.view()?.text).toMatch(/For Somchai/);
     while (dialogue.active) dialogue.advance();
+    expect(countItem(session.state, 'produce_crate')).toBe(1);
 
+    const moneyBefore = session.state.money;
     dialogue.start(npc('somchai'));
     expect(dialogue.view()?.speaker).toBe('You');
     while (dialogue.active) dialogue.advance();
 
+    expect(countItem(session.state, 'produce_crate')).toBe(0);
+    expect(session.state.money).toBe(moneyBefore + 50);
     expect(session.state.flags).toMatchObject({ restaurant_open: true, market_reputation: 10 });
-    expect(notices.at(-1)).toEqual({ type: 'questCompleted', quest: 'q_delivery' });
+    expect(notices).toContainEqual({ type: 'questCompleted', quest: 'q_delivery' });
 
     dialogue.start(sign);
     expect(dialogue.view()?.text).toMatch(/OPEN/);
@@ -163,5 +168,49 @@ describe('Fresh Ingredients: consequences and memory', () => {
     const { session, dialogue } = setup();
     dialogue.start(sign);
     expect(session.state.memories).toEqual({});
+  });
+});
+
+describe('shops', () => {
+  it('a shopkeeper line opens their shop, and trades go through the session', () => {
+    const { session, dialogue } = setup();
+    const opened: string[] = [];
+    dialogue.on('openShop', (shop) => opened.push(shop));
+
+    dialogue.start(npc('ken'));
+    dialogue.advance(); // "Need anything?"
+    dialogue.choose(0); // Let me browse.
+    expect(dialogue.active).toBe(false);
+    expect(opened).toEqual(['ken_shop']);
+
+    const bought = session.buy('ken_shop', 'bread', 1);
+    expect(bought.ok).toBe(true);
+    expect(session.state.money).toBe(85);
+    expect(countItem(session.state, 'bread')).toBe(1);
+
+    const sold = session.sell('ken_shop', 'bread', 1);
+    expect(sold).toMatchObject({ ok: true, receipt: { total: 6 } }); // 40% of 15
+    expect(session.state.money).toBe(91);
+  });
+
+  it("Somchai's kitchen only trades once the restaurant is open", () => {
+    const { session } = setup();
+    expect(session.buy('somchai_kitchen', 'green_curry', 1)).toEqual({
+      ok: false,
+      reason: 'shop_closed',
+    });
+    session.applyEffects([{ type: 'setFlag', flag: 'restaurant_open' }]);
+    expect(session.buy('somchai_kitchen', 'green_curry', 1).ok).toBe(true);
+  });
+
+  it('a refused trade changes nothing and emits nothing', () => {
+    const { session, notices } = setup();
+    const before = session.state;
+    expect(session.buy('mali_stall', 'mangosteen', 6)).toEqual({
+      ok: false,
+      reason: 'not_enough_money',
+    });
+    expect(session.state).toBe(before);
+    expect(notices).toEqual([]);
   });
 });

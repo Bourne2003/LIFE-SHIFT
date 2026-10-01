@@ -136,7 +136,7 @@ export class WorldScene extends Phaser.Scene {
     const { input, dialogue, ui } = this.services;
     const interact = input.consume('interact');
 
-    if (ui.menuOpen) {
+    if (ui.modal !== null) {
       this._player.applyIntent(IDLE_INTENT);
     } else if (dialogue.active) {
       this._player.applyIntent(IDLE_INTENT);

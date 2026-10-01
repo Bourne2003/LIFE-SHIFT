@@ -5,13 +5,12 @@ import { el } from './dom';
 const CONFIRM_WINDOW_MS = 4000;
 
 /**
- * Game menu: save, load the last save, start a new game. Gameplay pauses while it is open
- * (services.ui.menuOpen). "New game" needs a second tap to confirm, since it deletes the save.
+ * Game menu: save, load the last save, start a new game. Uses the shared modal slot, so the
+ * game pauses while it is open. "New game" needs a second tap to confirm (it deletes the save).
  */
 export function mountMenu(
   services: GameServices,
   toast: (text: string, kind?: string) => void,
-  onToggle: (open: boolean) => void,
 ): { elements: HTMLElement[]; destroy: () => void } {
   const { save, ui } = services;
   const cleanups: (() => void)[] = [];
@@ -19,17 +18,22 @@ export function mountMenu(
   const openButton = el(
     'button',
     {
-      className: 'ui-menu-button',
+      className: 'ui-hud-button ui-menu-button',
       attrs: { type: 'button', 'aria-label': 'Menu', 'data-testid': 'menu-button' },
     },
     ['☰'],
   );
 
-  const status = el('p', { className: 'ui-menu__status', attrs: { 'data-testid': 'save-status' } });
+  const status = el('p', {
+    className: 'ui-modal__status',
+    attrs: { 'data-testid': 'save-status' },
+  });
   const button = (label: string, testId: string) =>
-    el('button', { className: 'ui-menu__item', attrs: { type: 'button', 'data-testid': testId } }, [
-      label,
-    ]);
+    el(
+      'button',
+      { className: 'ui-modal__item', attrs: { type: 'button', 'data-testid': testId } },
+      [label],
+    );
   const saveButton = button('Save game', 'menu-save');
   const loadButton = button('Load last save', 'menu-load');
   const resetButton = button('New game', 'menu-reset');
@@ -38,11 +42,11 @@ export function mountMenu(
   const panel = el(
     'section',
     {
-      className: 'ui-menu ui-panel is-hidden',
+      className: 'ui-modal ui-panel is-hidden',
       attrs: { role: 'dialog', 'aria-label': 'Menu', 'data-testid': 'menu' },
     },
     [
-      el('h2', { className: 'ui-menu__title', text: 'Menu' }),
+      el('h2', { className: 'ui-modal__title', text: 'Menu' }),
       status,
       saveButton,
       loadButton,
@@ -64,23 +68,24 @@ export function mountMenu(
     resetButton.classList.remove('is-danger');
   };
 
-  const setOpen = (open: boolean) => {
-    ui.menuOpen = open;
-    panel.classList.toggle('is-hidden', !open);
-    openButton.setAttribute('aria-expanded', String(open));
-    resetConfirm();
-    onToggle(open);
-    if (open) {
-      renderStatus();
-      saveButton.focus();
-    } else openButton.focus();
-  };
+  cleanups.push(
+    ui.on('modal', (modal) => {
+      const open = modal === 'menu';
+      panel.classList.toggle('is-hidden', !open);
+      openButton.setAttribute('aria-expanded', String(open));
+      resetConfirm();
+      if (open) {
+        renderStatus();
+        saveButton.focus();
+      }
+    }),
+  );
 
-  openButton.addEventListener('click', () => setOpen(!ui.menuOpen));
-  closeButton.addEventListener('click', () => setOpen(false));
+  openButton.addEventListener('click', () => ui.toggle('menu'));
+  closeButton.addEventListener('click', () => ui.close('menu'));
   saveButton.addEventListener('click', () => void save.save());
   loadButton.addEventListener('click', async () => {
-    if (await save.load()) setOpen(false);
+    if (await save.load()) ui.close('menu');
   });
   resetButton.addEventListener('click', async () => {
     if (Date.now() > confirmUntil) {
@@ -90,19 +95,15 @@ export function mountMenu(
       return;
     }
     await save.reset();
-    setOpen(false);
+    ui.close('menu');
   });
-
-  const onKey = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && ui.menuOpen) setOpen(false);
-  };
-  window.addEventListener('keydown', onKey);
-  cleanups.push(() => window.removeEventListener('keydown', onKey));
 
   cleanups.push(
     save.on('status', (s: SaveStatus) => {
       renderStatus();
-      if (s.kind === 'saved' && ui.menuOpen) status.textContent = `Saved ✓ ${formatTime(s.at)}`;
+      if (s.kind === 'saved' && ui.modal === 'menu') {
+        status.textContent = `Saved ✓ ${formatTime(s.at)}`;
+      }
       if (s.kind === 'loaded') toast('Game loaded');
       if (s.kind === 'reset') toast('New game started');
       if (s.kind === 'error') {
@@ -113,13 +114,7 @@ export function mountMenu(
   );
 
   renderStatus();
-  return {
-    elements: [openButton, panel],
-    destroy: () => {
-      cleanups.forEach((c) => c());
-      ui.menuOpen = false;
-    },
-  };
+  return { elements: [openButton, panel], destroy: () => cleanups.forEach((c) => c()) };
 }
 
 function formatTime(iso: string): string {

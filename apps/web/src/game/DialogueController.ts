@@ -33,6 +33,8 @@ export interface DialogueView {
 export interface DialogueEvents {
   /** null when the conversation closes. */
   change: DialogueView | null;
+  /** A line asked to open a shop (presentation effect; the state is unchanged). */
+  openShop: string;
 }
 
 /** Runs one conversation at a time against the session's state. */
@@ -98,9 +100,13 @@ export class DialogueController extends Emitter<DialogueEvents> {
 
   private apply(step: DialogueStep): void {
     this.session.applyEffects(step.effects);
-    if (!step.cursor) return this.close();
-    this.cursor = step.cursor;
-    this.emit('change', this.view());
+    if (step.cursor) {
+      this.cursor = step.cursor;
+      this.emit('change', this.view());
+    } else this.close();
+    for (const effect of step.effects) {
+      if (effect.type === 'openShop') this.emit('openShop', effect.shop);
+    }
   }
 
   private speakerName(speaker: string | undefined): string {

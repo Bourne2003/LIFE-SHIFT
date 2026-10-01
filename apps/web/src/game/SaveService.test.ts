@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { loadContent } from '@life-shift/game-data';
-import { createSave, type TilePos } from '@life-shift/shared';
+import { createSave, newGameState, type TilePos } from '@life-shift/shared';
 import { GameSession } from './GameSession';
 import {
   MemorySaveStorage,
@@ -51,7 +51,7 @@ describe('SaveService', () => {
     session.applyEffects([{ type: 'setFlag', flag: 'x' }]);
     await save.save();
     await save.reset();
-    expect(session.state).toEqual({ flags: {}, quests: {}, memories: {} });
+    expect(session.state).toEqual(newGameState(content));
     expect(await storage.read()).toBeNull();
     expect(teleports.at(-1)).toEqual(content.map.spawn);
     expect(statuses.at(-1)).toEqual({ kind: 'reset' });

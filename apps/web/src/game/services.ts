@@ -5,6 +5,7 @@ import { DialogueController } from './DialogueController';
 import { Emitter } from './events';
 import { GameSession } from './GameSession';
 import { MemorySaveStorage, SaveService, type SaveStorage } from './SaveService';
+import { UiState } from './UiState';
 
 /** World happenings the UI reacts to (not game state — that lives in GameSession). */
 export interface WorldEvents {
@@ -30,8 +31,8 @@ export interface GameServices {
   readonly dialogue: DialogueController;
   readonly save: SaveService;
   readonly world: Emitter<WorldEvents>;
-  /** UI state gameplay needs to respect (e.g. no walking while the menu is open). */
-  readonly ui: { menuOpen: boolean };
+  /** UI state gameplay needs to respect (no walking while a panel is open). */
+  readonly ui: UiState;
 }
 
 export interface ServiceOptions {
@@ -47,8 +48,14 @@ export function createServices(content: GameContent, options: ServiceOptions = {
   const dialogue = new DialogueController(session);
   const save = new SaveService(options.storage ?? new MemorySaveStorage(), session, options.save);
   // A load or new game replaces the whole world; an open conversation no longer makes sense.
+  const ui = new UiState();
   save.on('status', (s) => {
     if (s.kind === 'loaded' || s.kind === 'reset') dialogue.close();
+  });
+  // Dialogue can hand over to a shop ("Let me browse").
+  dialogue.on('openShop', (shop) => {
+    ui.shop = shop;
+    ui.open('shop');
   });
   return {
     content,
@@ -57,7 +64,7 @@ export function createServices(content: GameContent, options: ServiceOptions = {
     dialogue,
     save,
     world: new Emitter<WorldEvents>(),
-    ui: { menuOpen: false },
+    ui,
   };
 }
 
