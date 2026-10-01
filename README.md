@@ -6,7 +6,8 @@ A browser-first life simulation / RPG where NPCs live their own lives, remember 
 world changes in response to what you do. Runs on desktop, tablet and mobile browsers with no
 install.
 
-**Status:** Milestone 1 — _Browser Game Bootstrap_ — complete. See [docs/GDD/vision.md](docs/GDD/vision.md)
+**Status:** Milestone 2 — _Playable City_ — complete: explore the town of Ban Suan, talk to
+10 townspeople and finish the first quest. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
 ## Quick start
@@ -18,8 +19,12 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Controls: **WASD / arrow keys** on desktop; on touch screens, **drag on the left side** of the
-screen for a virtual joystick.
+Controls:
+
+- **Desktop:** WASD / arrow keys to move, **E** or **Space** to talk / continue, **1–4** to pick a
+  dialogue choice, **Esc** to leave a conversation.
+- **Touch:** drag on the left side of the screen to move; tap **Talk**, tap the dialogue box to
+  continue, tap a choice.
 
 ### Play on another device on your network
 
@@ -44,13 +49,15 @@ npm run dev:lan -w @life-shift/web   # prints http://192.168.x.x:5173
 
 ```
 apps/web/          Phaser 3 + Vite browser client
-packages/shared/   Engine-agnostic types, constants and pure game logic (client + future server)
+packages/shared/   Content schema, game state and pure rules (client + future server)
+packages/game-data/ Map, NPCs, dialogue and quests as JSON + validator (see docs/design/content.md)
 docs/GDD/          Game design: vision, scope, milestones
+docs/design/       How to write content
 docs/architecture/ How the code is organised
 docs/decisions/    Architecture Decision Records (ADRs)
 ```
 
-`apps/server`, `packages/protocol` and `packages/game-data` are planned and will be added in the
+`apps/server` and `packages/protocol` are planned and will be added in the
 milestones that first need them.
 
 ## Configuration
