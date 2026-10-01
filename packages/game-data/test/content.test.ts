@@ -169,3 +169,88 @@ describe('validateContent: world memory content', () => {
     expect(errors).toMatch(/npc noi schedule\[0\]: unknown quest 'q_missing'/);
   });
 });
+
+describe('validateContent: items and shops', () => {
+  const base = rawContent();
+
+  it('flags broken items, shops and economy settings', () => {
+    const errors = validateContent({
+      ...base,
+      items: {
+        ...base.items,
+        apple: { ...base.items.apple!, maxStack: 0, price: -1 },
+        produce_crate: { ...base.items.produce_crate!, sellable: true },
+      },
+      shops: {
+        ...base.shops,
+        ken_shop: {
+          ...base.shops.ken_shop!,
+          owner: 'ghost',
+          stock: [{ item: 'bread' }, { item: 'bread' }, { item: 'produce_crate' }, { item: 'x' }],
+          buybackRate: 2,
+        },
+        secret: { ...base.shops.ken_shop!, id: 'secret' },
+      },
+      economy: {
+        currencySymbol: '',
+        startingMoney: -5,
+        startingItems: [{ item: 'x', quantity: 0 }],
+      },
+    }).join('\n');
+    for (const expected of [
+      /item apple: maxStack must be/,
+      /item apple: price must be/,
+      /item produce_crate: quest items cannot be sellable/,
+      /shop ken_shop: unknown owner 'ghost'/,
+      /shop ken_shop: 'bread' listed twice/,
+      /shop ken_shop: sells quest item 'produce_crate'/,
+      /shop ken_shop: unknown item 'x'/,
+      /shop ken_shop: buybackRate must be between 0 and 1/,
+      /shop secret: no dialogue opens it/,
+      /economy: currencySymbol is empty/,
+      /economy: startingMoney must be/,
+      /economy: unknown starting item 'x'/,
+    ]) {
+      expect(errors).toMatch(expected);
+    }
+  });
+
+  it('flags unknown items and shops in effects, conditions and objectives', () => {
+    const errors = validateContent({
+      ...base,
+      dialogues: {
+        ...base.dialogues,
+        lek_default: {
+          id: 'lek_default',
+          start: 'a',
+          nodes: {
+            a: {
+              text: 'hi',
+              effects: [
+                { type: 'giveItem', item: 'gold_bar' },
+                { type: 'openShop', shop: 'nowhere' },
+                { type: 'adjustMoney', amount: 1.5 },
+              ],
+              choices: [{ text: 'x', when: [{ type: 'hasItem', item: 'gem', quantity: 0 }] }],
+            },
+          },
+        },
+      },
+      quests: {
+        ...base.quests,
+        q_delivery: {
+          ...base.quests.q_delivery!,
+          objectives: [
+            { id: 'd', description: 'd', type: 'deliver', npc: 'somchai', item: 'nothing' },
+          ],
+        },
+      },
+    }).join('\n');
+    expect(errors).toMatch(/unknown item 'gold_bar'/);
+    expect(errors).toMatch(/unknown shop 'nowhere'/);
+    expect(errors).toMatch(/money amount must be a whole number/);
+    expect(errors).toMatch(/unknown item 'gem'/);
+    expect(errors).toMatch(/quantity must be a whole number >= 1/);
+    expect(errors).toMatch(/objective d: unknown item 'nothing'/);
+  });
+});

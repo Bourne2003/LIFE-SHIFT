@@ -1,0 +1,10 @@
+{
+  "currencySymbol": "฿",
+  "startingMoney": 100,
+  "startingItems": [
+    {
+      "item": "water",
+      "quantity": 1
+    }
+  ]
+}

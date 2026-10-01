@@ -1,0 +1,56 @@
+[
+  {
+    "id": "ken_shop",
+    "name": "Ken's Corner Shop",
+    "owner": "ken",
+    "stock": [
+      {
+        "item": "bread"
+      },
+      {
+        "item": "water"
+      },
+      {
+        "item": "rice"
+      }
+    ],
+    "buys": ["food", "ingredient", "misc"],
+    "buybackRate": 0.4
+  },
+  {
+    "id": "mali_stall",
+    "name": "Mali's Fruit Stall",
+    "owner": "mali",
+    "stock": [
+      {
+        "item": "apple"
+      },
+      {
+        "item": "mango"
+      },
+      {
+        "item": "mangosteen"
+      }
+    ],
+    "buys": ["food"],
+    "buybackRate": 0.5
+  },
+  {
+    "id": "somchai_kitchen",
+    "name": "Somchai's Kitchen",
+    "owner": "somchai",
+    "stock": [
+      {
+        "item": "green_curry"
+      }
+    ],
+    "buys": ["ingredient"],
+    "buybackRate": 0.6,
+    "when": [
+      {
+        "type": "flag",
+        "flag": "restaurant_open"
+      }
+    ]
+  }
+]

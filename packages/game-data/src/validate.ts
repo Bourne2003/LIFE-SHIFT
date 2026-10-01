@@ -1,4 +1,5 @@
 import {
+  ITEM_CATEGORIES,
   isSolid,
   parseMap,
   type Condition,
@@ -28,6 +29,9 @@ export function validateContent(content: GameContent): string[] {
   }
 
   const npcIds = new Set(content.npcs.map((n) => n.id));
+  const openedShops = new Set<string>();
+  const isCount = (n: unknown) => Number.isInteger(n) && (n as number) >= 1;
+  const isAmount = (n: unknown) => Number.isInteger(n) && (n as number) >= 0;
   const locationIds = new Set(content.map.locations.map((l) => l.id));
   const usedDialogues = new Set<string>();
   const checkDialogueRefs = (
@@ -56,6 +60,13 @@ export function validateContent(content: GameContent): string[] {
       if (c.quest && !content.quests[c.quest]) err(`${where}: unknown quest '${c.quest}'`);
       return;
     }
+    if (c.type === 'hasItem') {
+      if (!content.items[c.item]) err(`${where}: unknown item '${c.item}'`);
+      if (c.quantity !== undefined && !isCount(c.quantity)) {
+        err(`${where}: quantity must be a whole number >= 1`);
+      }
+      return;
+    }
     if (c.type !== 'quest') return;
     const quest = content.quests[c.quest];
     if (!quest) return err(`${where}: unknown quest '${c.quest}'`);
@@ -69,6 +80,19 @@ export function validateContent(content: GameContent): string[] {
         err(`${where}: unknown quest '${e.quest}'`);
       }
       if (e.type === 'remember' && !npcIds.has(e.npc)) err(`${where}: unknown npc '${e.npc}'`);
+      if (e.type === 'giveItem' || e.type === 'takeItem') {
+        if (!content.items[e.item]) err(`${where}: unknown item '${e.item}'`);
+        if (e.quantity !== undefined && !isCount(e.quantity)) {
+          err(`${where}: quantity must be a whole number >= 1`);
+        }
+      }
+      if (e.type === 'adjustMoney' && !Number.isInteger(e.amount)) {
+        err(`${where}: money amount must be a whole number`);
+      }
+      if (e.type === 'openShop') {
+        openedShops.add(e.shop);
+        if (!content.shops[e.shop]) err(`${where}: unknown shop '${e.shop}'`);
+      }
     }
   };
 
@@ -176,6 +200,10 @@ export function validateContent(content: GameContent): string[] {
       if (o.type === 'talk' && !npcIds.has(o.npc)) {
         err(`${where} objective ${o.id}: unknown npc '${o.npc}'`);
       }
+      if (o.type === 'deliver') {
+        if (!npcIds.has(o.npc)) err(`${where} objective ${o.id}: unknown npc '${o.npc}'`);
+        if (!content.items[o.item]) err(`${where} objective ${o.id}: unknown item '${o.item}'`);
+      }
       if (o.type === 'reach' && !locationIds.has(o.location)) {
         err(`${where} objective ${o.id}: unknown location '${o.location}'`);
       }
@@ -184,6 +212,50 @@ export function validateContent(content: GameContent): string[] {
     if (quest.next && !content.quests[quest.next]) {
       err(`${where}: unknown follow-up quest '${quest.next}'`);
     }
+  }
+
+  // --- Items, shops, economy --------------------------------------------------------------
+  for (const [key, item] of Object.entries(content.items)) {
+    const where = `item ${key}`;
+    if (item.id !== key) err(`${where}: id '${item.id}' does not match its key`);
+    if (!ITEM_CATEGORIES.includes(item.category)) {
+      err(`${where}: unknown category '${item.category}'`);
+    }
+    if (!isCount(item.maxStack)) err(`${where}: maxStack must be a whole number >= 1`);
+    if (!isAmount(item.price)) err(`${where}: price must be a whole number >= 0`);
+    if (item.category === 'quest' && item.sellable) err(`${where}: quest items cannot be sellable`);
+  }
+  for (const [key, shop] of Object.entries(content.shops)) {
+    const where = `shop ${key}`;
+    if (shop.id !== key) err(`${where}: id '${shop.id}' does not match its key`);
+    if (!npcIds.has(shop.owner)) err(`${where}: unknown owner '${shop.owner}'`);
+    if (shop.stock.length === 0) err(`${where}: has nothing for sale`);
+    findDuplicates(shop.stock.map((s) => s.item)).forEach((id) =>
+      err(`${where}: '${id}' listed twice`),
+    );
+    for (const entry of shop.stock) {
+      const item = content.items[entry.item];
+      if (!item) err(`${where}: unknown item '${entry.item}'`);
+      else if (item.category === 'quest') err(`${where}: sells quest item '${entry.item}'`);
+      if (entry.price !== undefined && !isAmount(entry.price)) {
+        err(`${where}: price for '${entry.item}' must be a whole number >= 0`);
+      }
+    }
+    for (const category of shop.buys) {
+      if (!ITEM_CATEGORIES.includes(category)) err(`${where}: unknown category '${category}'`);
+    }
+    if (!(shop.buybackRate >= 0 && shop.buybackRate <= 1)) {
+      err(`${where}: buybackRate must be between 0 and 1`);
+    }
+    checkConditions(where, shop.when);
+    if (!openedShops.has(key)) err(`${where}: no dialogue opens it`);
+  }
+  const economy = content.economy;
+  if (!economy.currencySymbol) err('economy: currencySymbol is empty');
+  if (!isAmount(economy.startingMoney)) err('economy: startingMoney must be a whole number >= 0');
+  for (const s of economy.startingItems) {
+    if (!content.items[s.item]) err(`economy: unknown starting item '${s.item}'`);
+    if (!isCount(s.quantity)) err(`economy: starting '${s.item}' quantity must be >= 1`);
   }
 
   return errors;

@@ -28,6 +28,10 @@
       {
         "type": "setFlag",
         "flag": "knows_town"
+      },
+      {
+        "type": "adjustMoney",
+        "amount": 20
       }
     ]
   },
@@ -45,9 +49,10 @@
       },
       {
         "id": "deliver_somchai",
-        "description": "Bring the produce to Somchai",
-        "type": "talk",
-        "npc": "somchai"
+        "description": "Bring the crate of produce to Somchai",
+        "type": "deliver",
+        "npc": "somchai",
+        "item": "produce_crate"
       }
     ],
     "rewards": [
@@ -69,6 +74,10 @@
         "type": "remember",
         "npc": "mali",
         "event": "PLAYER_HELPED_NPC"
+      },
+      {
+        "type": "adjustMoney",
+        "amount": 50
       }
     ]
   }

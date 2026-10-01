@@ -203,6 +203,10 @@
             "quest": "q_delivery",
             "status": "active",
             "objective": "deliver_somchai"
+          },
+          {
+            "type": "hasItem",
+            "item": "produce_crate"
           }
         ]
       },

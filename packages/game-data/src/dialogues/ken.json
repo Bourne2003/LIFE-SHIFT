@@ -22,7 +22,25 @@
     "start": "a",
     "nodes": {
       "a": {
-        "text": "New face! I'm Ken. This is my shop. Don't tell Mali, but my mangoes are better."
+        "text": "New face! I'm Ken. This is my shop. Don't tell Mali, but my mangoes are better.",
+        "next": "b"
+      },
+      "b": {
+        "text": "Need anything?",
+        "choices": [
+          {
+            "text": "Let me browse.",
+            "effects": [
+              {
+                "type": "openShop",
+                "shop": "ken_shop"
+              }
+            ]
+          },
+          {
+            "text": "Just saying hi."
+          }
+        ]
       }
     }
   },
@@ -31,7 +49,21 @@
     "start": "a",
     "nodes": {
       "a": {
-        "text": "Back again? Shop's open. Still the best mangoes in town, whatever Mali says."
+        "text": "Back again? Shop's open. Still the best mangoes in town, whatever Mali says.",
+        "choices": [
+          {
+            "text": "Let me browse.",
+            "effects": [
+              {
+                "type": "openShop",
+                "shop": "ken_shop"
+              }
+            ]
+          },
+          {
+            "text": "Just saying hi."
+          }
+        ]
       }
     }
   }

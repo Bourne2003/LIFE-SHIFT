@@ -106,7 +106,7 @@
     "nodes": {
       "a": {
         "speaker": "player",
-        "text": "Fresh from Mali's stall.",
+        "text": "Here's the crate from Mali's stall.",
         "next": "b"
       },
       "b": {
@@ -123,7 +123,21 @@
         "next": "b"
       },
       "b": {
-        "text": "For you, the curry is always on the house. The whole street is talking about what you did."
+        "text": "For you, the curry is always on the house. The whole street is talking about what you did.",
+        "choices": [
+          {
+            "text": "I'd like to order.",
+            "effects": [
+              {
+                "type": "openShop",
+                "shop": "somchai_kitchen"
+              }
+            ]
+          },
+          {
+            "text": "Just stopping by."
+          }
+        ]
       }
     }
   }

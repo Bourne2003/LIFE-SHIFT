@@ -1,0 +1,74 @@
+[
+  {
+    "id": "apple",
+    "name": "Apple",
+    "description": "Crisp and a little sour. Grown up north.",
+    "category": "food",
+    "maxStack": 10,
+    "price": 5,
+    "sellable": true
+  },
+  {
+    "id": "mango",
+    "name": "Mango",
+    "description": "Sweet, ripe and sticky. Ken claims his are better.",
+    "category": "food",
+    "maxStack": 10,
+    "price": 12,
+    "sellable": true
+  },
+  {
+    "id": "mangosteen",
+    "name": "Mangosteen",
+    "description": "The queen of fruits, according to Mali.",
+    "category": "food",
+    "maxStack": 10,
+    "price": 20,
+    "sellable": true
+  },
+  {
+    "id": "bread",
+    "name": "Bread",
+    "description": "A soft loaf from the corner shop.",
+    "category": "food",
+    "maxStack": 10,
+    "price": 15,
+    "sellable": true
+  },
+  {
+    "id": "water",
+    "name": "Bottled water",
+    "description": "Cold, if you are lucky.",
+    "category": "food",
+    "maxStack": 10,
+    "price": 5,
+    "sellable": true
+  },
+  {
+    "id": "rice",
+    "name": "Jasmine rice",
+    "description": "A small sack of fragrant rice.",
+    "category": "ingredient",
+    "maxStack": 10,
+    "price": 25,
+    "sellable": true
+  },
+  {
+    "id": "green_curry",
+    "name": "Green curry",
+    "description": "Somchai's specialty, packed to take away.",
+    "category": "food",
+    "maxStack": 5,
+    "price": 35,
+    "sellable": true
+  },
+  {
+    "id": "produce_crate",
+    "name": "Crate of produce",
+    "description": "Fresh vegetables from Mali's stall, set aside for Somchai.",
+    "category": "quest",
+    "maxStack": 1,
+    "price": 0,
+    "sellable": false
+  }
+]

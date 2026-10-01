@@ -1,14 +1,20 @@
 import type {
   DialogueDef,
+  EconomyDef,
   GameContent,
+  ItemDef,
   MapDef,
   NpcDef,
   QuestDef,
+  ShopDef,
   WorldObjectDef,
 } from '@life-shift/shared';
 import town from './maps/town.json';
 import npcs from './npcs.json';
 import objects from './objects.json';
+import items from './items.json';
+import shops from './shops.json';
+import economy from './economy.json';
 import quests from './quests.json';
 import art from './dialogues/art.json';
 import bun from './dialogues/bun.json';
@@ -49,6 +55,9 @@ export function rawContent(): GameContent {
     objects: objects as unknown as WorldObjectDef[],
     dialogues: Object.fromEntries(dialogueFiles.flat().map((d) => [d.id, d])),
     quests: Object.fromEntries((quests as unknown as QuestDef[]).map((q) => [q.id, q])),
+    items: Object.fromEntries((items as unknown as ItemDef[]).map((i) => [i.id, i])),
+    shops: Object.fromEntries((shops as unknown as ShopDef[]).map((s) => [s.id, s])),
+    economy: economy as unknown as EconomyDef,
   };
 }
 

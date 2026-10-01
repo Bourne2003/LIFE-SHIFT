@@ -11,6 +11,15 @@
             "next": "good"
           },
           {
+            "text": "Show me your fruit.",
+            "effects": [
+              {
+                "type": "openShop",
+                "shop": "mali_stall"
+              }
+            ]
+          },
+          {
             "text": "Just looking."
           }
         ]
@@ -29,7 +38,13 @@
         "next": "b"
       },
       "b": {
-        "text": "Here — one crate of the freshest vegetables in Ban Suan. Don't drop it!"
+        "text": "Here — one crate of the freshest vegetables in Ban Suan. Don't drop it!",
+        "effects": [
+          {
+            "type": "giveItem",
+            "item": "produce_crate"
+          }
+        ]
       }
     }
   },
@@ -42,7 +57,21 @@
         "next": "b"
       },
       "b": {
-        "text": "Even Ken admitted it was a good idea. Ken! Admitting something!"
+        "text": "Even Ken admitted it was a good idea. Ken! Admitting something!",
+        "choices": [
+          {
+            "text": "Show me your fruit.",
+            "effects": [
+              {
+                "type": "openShop",
+                "shop": "mali_stall"
+              }
+            ]
+          },
+          {
+            "text": "See you, Mali."
+          }
+        ]
       }
     }
   }
