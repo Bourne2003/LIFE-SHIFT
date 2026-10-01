@@ -38,7 +38,9 @@ developer experience, visual quality.
 | 1   | Browser Game Bootstrap | TS + Vite + Phaser, scene, player, movement, camera, responsive canvas, touch | **Done** |
 | 2   | Playable City          | Small map, collision, NPCs, interaction, dialogue, basic quest                | **Done** |
 | 3   | World Memory           | World state, quest consequences, NPC memory, save/load                        | **Done** |
-| 4   | LAN Multiplayer        | Local server, room, connection, sync, disconnect handling                     | Next     |
+| 3b  | Economy                | Items, bag, money, shops (buy/sell), item-based quest objectives              | **Done** |
+| 3c  | Time & weather         | Day/night clock driving schedules, clear/rain weather                         | Next     |
+| 4   | LAN Multiplayer        | Local server, room, connection, sync, disconnect handling                     |          |
 | 5   | Online Ready           | Deploy config, env config, HTTPS, database design, monitoring                 |          |
 
 Multiplayer order: local single-player → local server → LAN → Internet → persistent accounts →

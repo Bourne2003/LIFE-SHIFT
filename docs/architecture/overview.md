@@ -27,11 +27,12 @@ game-data (JSON content) ──► shared (pure rules) ──► web: GameSessio
 - **Content** ([ADR-004](../decisions/ADR-004-content-as-json.md)) describes _what exists_: map,
   NPCs, dialogue graphs, quests. Validated at load and in unit tests.
 - **Rules** in `shared` are pure functions over immutable `GameState` (flags, quest progress,
-  NPC memories): conditions, effects, the quest engine, NPC memory, the dialogue runner, tile
-  solidity, schedules, object appearance and the save format. The future server runs the same
+  NPC memories, money, bag): conditions, effects, the quest engine, NPC memory, the bag
+  (stacking, slots), shop trades, the dialogue runner, tile solidity, schedules, object
+  appearance and the save format. The future server runs the same
   code.
 - **GameSession** owns the `GameState` and is the only thing that changes it. Callers request
-  changes (`applyEffects`, `questEvent`) and observe `state` / `notice` events — the same
+  changes (`applyEffects`, `handleEvent`, `buy`, `sell`) and observe `state` / `notice` events — the same
   request → validate → broadcast shape a server-authoritative session will have.
 - **Derived world:** NPC positions (`npcPosition`) and object looks (`objectTexture`) are
   computed from state, never stored; `WorldScene` re-syncs them on every `state` event, so a
@@ -52,6 +53,8 @@ game/
   GameSession.ts        owns GameState; applies effects and player events; emits notices
   DialogueController.ts one conversation at a time with an NPC or object (a Talker)
   SaveService.ts        save / load / new game, autosave; SaveStorage (localStorage today)
+  UiState.ts            the one open panel (menu / bag / shop); gameplay pauses while set
+  format.ts             money and item names for display
   events.ts             tiny typed emitter (Phaser-free, unit-testable)
   createGame.ts         Phaser.Game config (RESIZE scale mode, arcade physics, scenes)
   resize.ts             ResizeObserver workaround for a Phaser rotation bug
@@ -70,7 +73,9 @@ entities/               Player (feet body), Npc (static feet body, moves on sche
                         WorldObject (sign etc.; texture follows state)
 input/                  InputSource + InputManager (move intent + actions), keyboard, joystick
 ui/mountUi.ts           hint, quest tracker, toasts, Talk/Look button, dialogue box (DOM)
-ui/menu.ts              Save / Load / New game (confirmed); pauses gameplay
+ui/menu.ts              Save / Load / New game (confirmed)
+ui/bag.ts               bag button (shows money) and bag panel: slots + item details
+ui/shop.ts              shop panel: Buy / Sell tabs; requests trades, shows the result
 ```
 
 ### Input
@@ -93,6 +98,13 @@ conditions hold is chosen, then (NPCs only) a `talk` event is sent — which rec
 completed and failed quests automatically.
 When the player's tile changes, every location containing it is sent as a `reach` quest event
 (also re-sent after quest changes, so a quest started inside its target area still completes).
+
+### Economy
+
+Trades are requests: the shop panel calls `GameSession.buy/sell`, which runs the shared
+`buy`/`sell` rules (shop open, in stock, quantity 1–99, enough money, bag space, what the shop
+buys) and either commits the new state with notices or returns a reason and changes nothing.
+The UI never computes prices or balances itself, so the same rules can move to the server.
 
 ### Scenes and scaling
 

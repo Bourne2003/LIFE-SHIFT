@@ -60,6 +60,43 @@ are chosen like NPC dialogues — first match wins — so world state changes ho
 what they say. Each `texture` needs art in the client (placeholders live in
 `apps/web/src/art/placeholderArt.ts`).
 
+## Items, shops and money — `items.json`, `shops.json`, `economy.json`
+
+```json
+{
+  "id": "mango",
+  "name": "Mango",
+  "description": "Sweet.",
+  "category": "food",
+  "maxStack": 10,
+  "price": 12,
+  "sellable": true
+}
+```
+
+- `category`: `food`, `ingredient`, `quest` or `misc`. Quest items can't be sold or bought and
+  never count against the 20-slot bag, so a quest can't be blocked by a full bag.
+- `price` is in whole currency units. A shop can override it per stock entry.
+
+```json
+{
+  "id": "mali_stall",
+  "name": "Mali's Fruit Stall",
+  "owner": "mali",
+  "stock": [{ "item": "apple" }, { "item": "mango", "price": 10 }],
+  "buys": ["food"],
+  "buybackRate": 0.5,
+  "when": [{ "type": "flag", "flag": "market_open" }]
+}
+```
+
+- Shops open from dialogue: give the owner a choice with `{ "type": "openShop", "shop": "mali_stall" }`.
+  The validator fails if no dialogue opens a shop.
+- The shop pays `floor(price × buybackRate)` for items in a category it `buys`.
+- `when` closes the shop unless every condition holds (Somchai's kitchen needs `restaurant_open`).
+
+`economy.json` sets the currency symbol, starting money and starting items for a new game.
+
 ## Dialogue — `dialogues/<npc>.json`
 
 ```json
@@ -93,7 +130,9 @@ what they say. Each `texture` needs art in the client (placeholders live in
 ## Quests — `quests.json`
 
 Objectives are completed in order. Types: `talk` (`npc`) — completes when a conversation with
-that NPC starts; `reach` (`location`) — completes when the player stands in that location.
+that NPC starts; `reach` (`location`) — completes when the player stands in that location;
+`deliver` (`npc`, `item`, optional `quantity`) — completes when talking to the NPC while
+carrying the items, which are handed over.
 `rewards` are effects applied on completion; `next` starts a follow-up quest. A `failQuest`
 effect fails an active quest; starting a failed quest again restarts it from the beginning.
 
@@ -106,12 +145,18 @@ effect fails an active quest; starting a failed quest again restarts it from the
 | `{ "type": "memory", "npc": "ken", "event": "PLAYER_MET_NPC" }` | the NPC remembers it (optional `quest`)         |
 | `{ "type": "quest", "quest": "q", "status": "active" }`         | status is `not_started/active/completed/failed` |
 | `{ "type": "quest", ..., "objective": "o" }`                    | …and `o` is the current objective               |
+| `{ "type": "hasItem", "item": "apple", "quantity": 2 }`         | the bag holds at least that many                |
+| `{ "type": "money", "atLeast": 50 }`                            | the player has at least that much money         |
 | `{ "type": "not", "condition": { ... } }`                       | inner condition is false                        |
 
-| Effect                                                                   | Does                                |
-| ------------------------------------------------------------------------ | ----------------------------------- |
-| `{ "type": "setFlag", "flag": "f", "value": 3 }`                         | sets a world flag (default `true`)  |
-| `{ "type": "adjustFlag", "flag": "rep", "by": 10 }`                      | adds to a numeric flag (unset = 0)  |
-| `{ "type": "startQuest", "quest": "q" }`                                 | starts (or restarts a failed) quest |
-| `{ "type": "failQuest", "quest": "q" }`                                  | fails an active quest               |
-| `{ "type": "remember", "npc": "somchai", "event": "PLAYER_HELPED_NPC" }` | the NPC remembers it                |
+| Effect                                                                   | Does                                        |
+| ------------------------------------------------------------------------ | ------------------------------------------- |
+| `{ "type": "setFlag", "flag": "f", "value": 3 }`                         | sets a world flag (default `true`)          |
+| `{ "type": "adjustFlag", "flag": "rep", "by": 10 }`                      | adds to a numeric flag (unset = 0)          |
+| `{ "type": "startQuest", "quest": "q" }`                                 | starts (or restarts a failed) quest         |
+| `{ "type": "failQuest", "quest": "q" }`                                  | fails an active quest                       |
+| `{ "type": "remember", "npc": "somchai", "event": "PLAYER_HELPED_NPC" }` | the NPC remembers it                        |
+| `{ "type": "giveItem", "item": "apple", "quantity": 2 }`                 | adds items (overflow is reported, not kept) |
+| `{ "type": "takeItem", "item": "apple" }`                                | removes up to that many                     |
+| `{ "type": "adjustMoney", "amount": 50 }`                                | adds or removes money (never below 0)       |
+| `{ "type": "openShop", "shop": "ken_shop" }`                             | opens a shop's panel (no state change)      |

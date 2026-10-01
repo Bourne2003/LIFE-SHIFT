@@ -34,3 +34,9 @@ will later move persistence to a server.
   change.
 - If saves grow (inventory, larger worlds) or need to be written off the main thread, swap
   `LocalSaveStorage` for an IndexedDB implementation of the same interface.
+
+## Changelog
+
+- **v2** (2026-10-01): added `money` and `inventory`. Migration 1→2 gives existing saves the
+  starting money and items from `economy.json`. Migrations now receive the content, since
+  sensible defaults usually come from it.

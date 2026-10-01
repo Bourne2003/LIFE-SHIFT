@@ -8,7 +8,7 @@ install.
 
 **Status:** Milestone 3 — _World Memory_ — complete: explore Ban Suan, talk to 10 townspeople
 who remember you, and change the town — reopen Somchai's Kitchen and watch the street react.
-Progress saves automatically. See [docs/GDD/vision.md](docs/GDD/vision.md)
+Buy and sell at three shops, carry what you own in your bag. Progress saves automatically. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
 ## Quick start
@@ -23,9 +23,11 @@ npm run dev          # http://localhost:5173
 Controls:
 
 - **Desktop:** WASD / arrow keys to move, **E** or **Space** to talk / continue, **1–4** to pick a
-  dialogue choice, **Esc** to leave a conversation or close the menu.
+  dialogue choice, **I** for your bag, **Esc** to leave a conversation or close a panel.
 - **Touch:** drag on the left side of the screen to move; tap **Talk**, tap the dialogue box to
   continue, tap a choice.
+- **Bag (🎒, top left)** shows your money; tap it to see what you carry. Shopkeepers offer their
+  shop in conversation ("Let me browse").
 - **Menu (☰, top left):** save, load your last save, or start a new game. The game also saves
   automatically after quest progress and when you leave the tab.
 
