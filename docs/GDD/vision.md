@@ -37,8 +37,8 @@ developer experience, visual quality.
 | --- | ---------------------- | ----------------------------------------------------------------------------- | -------- |
 | 1   | Browser Game Bootstrap | TS + Vite + Phaser, scene, player, movement, camera, responsive canvas, touch | **Done** |
 | 2   | Playable City          | Small map, collision, NPCs, interaction, dialogue, basic quest                | **Done** |
-| 3   | World Memory           | World state, quest consequences, NPC memory, save/load                        | Next     |
-| 4   | LAN Multiplayer        | Local server, room, connection, sync, disconnect handling                     |          |
+| 3   | World Memory           | World state, quest consequences, NPC memory, save/load                        | **Done** |
+| 4   | LAN Multiplayer        | Local server, room, connection, sync, disconnect handling                     | Next     |
 | 5   | Online Ready           | Deploy config, env config, HTTPS, database design, monitoring                 |          |
 
 Multiplayer order: local single-player → local server → LAN → Internet → persistent accounts →

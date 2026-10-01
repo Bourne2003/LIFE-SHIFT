@@ -6,8 +6,9 @@ A browser-first life simulation / RPG where NPCs live their own lives, remember 
 world changes in response to what you do. Runs on desktop, tablet and mobile browsers with no
 install.
 
-**Status:** Milestone 2 — _Playable City_ — complete: explore the town of Ban Suan, talk to
-10 townspeople and finish the first quest. See [docs/GDD/vision.md](docs/GDD/vision.md)
+**Status:** Milestone 3 — _World Memory_ — complete: explore Ban Suan, talk to 10 townspeople
+who remember you, and change the town — reopen Somchai's Kitchen and watch the street react.
+Progress saves automatically. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
 ## Quick start
@@ -22,9 +23,11 @@ npm run dev          # http://localhost:5173
 Controls:
 
 - **Desktop:** WASD / arrow keys to move, **E** or **Space** to talk / continue, **1–4** to pick a
-  dialogue choice, **Esc** to leave a conversation.
+  dialogue choice, **Esc** to leave a conversation or close the menu.
 - **Touch:** drag on the left side of the screen to move; tap **Talk**, tap the dialogue box to
   continue, tap a choice.
+- **Menu (☰, top left):** save, load your last save, or start a new game. The game also saves
+  automatically after quest progress and when you leave the tab.
 
 ### Play on another device on your network
 

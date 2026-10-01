@@ -38,8 +38,27 @@ are fine; the smallest containing area is announced. `hidden: true` announces it
 ```
 
 `dialogues` is checked top to bottom; the first entry whose `when` conditions all hold is used,
-so put specific dialogues first and an unconditional default last. `schedule` is stored now and
-will drive positions once the game clock exists.
+so put specific dialogues first and an unconditional default last.
+
+`schedule` decides where the NPC stands: the first entry whose `period` matches (`any` until the
+game clock exists) and whose `when` conditions hold, else `position`. Use it for consequences:
+
+```json
+"schedule": [
+  { "period": "any", "position": { "x": 26, "y": 22 }, "when": [{ "type": "flag", "flag": "restaurant_open" }] },
+  { "period": "any", "position": { "x": 27, "y": 23 } }
+]
+```
+
+NPCs automatically remember `PLAYER_MET_NPC` the first time you talk to them; quest givers
+remember `PLAYER_COMPLETED_QUEST` / `PLAYER_FAILED_QUEST`.
+
+## Objects — `objects.json`
+
+Inspectable things that are not people (signs, notice boards). `appearances` and `dialogues`
+are chosen like NPC dialogues — first match wins — so world state changes how they look and
+what they say. Each `texture` needs art in the client (placeholders live in
+`apps/web/src/art/placeholderArt.ts`).
 
 ## Dialogue — `dialogues/<npc>.json`
 
@@ -75,18 +94,24 @@ will drive positions once the game clock exists.
 
 Objectives are completed in order. Types: `talk` (`npc`) — completes when a conversation with
 that NPC starts; `reach` (`location`) — completes when the player stands in that location.
-`rewards` are effects applied on completion; `next` starts a follow-up quest.
+`rewards` are effects applied on completion; `next` starts a follow-up quest. A `failQuest`
+effect fails an active quest; starting a failed quest again restarts it from the beginning.
 
 ## Conditions and effects
 
-| Condition                                               | True when                                       |
-| ------------------------------------------------------- | ----------------------------------------------- |
-| `{ "type": "flag", "flag": "f" }`                       | flag `f` is `true` (or `equals` value)          |
-| `{ "type": "quest", "quest": "q", "status": "active" }` | status is `not_started/active/completed/failed` |
-| `{ "type": "quest", ..., "objective": "o" }`            | …and `o` is the current objective               |
-| `{ "type": "not", "condition": { ... } }`               | inner condition is false                        |
+| Condition                                                       | True when                                       |
+| --------------------------------------------------------------- | ----------------------------------------------- |
+| `{ "type": "flag", "flag": "f" }`                               | flag `f` is `true` (or `equals` value)          |
+| `{ "type": "flag", "flag": "rep", "atLeast": 10 }`              | numeric flag is at least 10                     |
+| `{ "type": "memory", "npc": "ken", "event": "PLAYER_MET_NPC" }` | the NPC remembers it (optional `quest`)         |
+| `{ "type": "quest", "quest": "q", "status": "active" }`         | status is `not_started/active/completed/failed` |
+| `{ "type": "quest", ..., "objective": "o" }`                    | …and `o` is the current objective               |
+| `{ "type": "not", "condition": { ... } }`                       | inner condition is false                        |
 
-| Effect                                           | Does                                      |
-| ------------------------------------------------ | ----------------------------------------- |
-| `{ "type": "setFlag", "flag": "f", "value": 3 }` | sets a world flag (default `true`)        |
-| `{ "type": "startQuest", "quest": "q" }`         | starts a quest (no-op if already started) |
+| Effect                                                                   | Does                                |
+| ------------------------------------------------------------------------ | ----------------------------------- |
+| `{ "type": "setFlag", "flag": "f", "value": 3 }`                         | sets a world flag (default `true`)  |
+| `{ "type": "adjustFlag", "flag": "rep", "by": 10 }`                      | adds to a numeric flag (unset = 0)  |
+| `{ "type": "startQuest", "quest": "q" }`                                 | starts (or restarts a failed) quest |
+| `{ "type": "failQuest", "quest": "q" }`                                  | fails an active quest               |
+| `{ "type": "remember", "npc": "somchai", "event": "PLAYER_HELPED_NPC" }` | the NPC remembers it                |

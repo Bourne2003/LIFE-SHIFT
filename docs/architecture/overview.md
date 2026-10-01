@@ -26,23 +26,32 @@ game-data (JSON content) ──► shared (pure rules) ──► web: GameSessio
 
 - **Content** ([ADR-004](../decisions/ADR-004-content-as-json.md)) describes _what exists_: map,
   NPCs, dialogue graphs, quests. Validated at load and in unit tests.
-- **Rules** in `shared` are pure functions over immutable `GameState`: conditions, effects, the
-  quest engine, the dialogue runner, tile solidity. The future server runs the same code.
+- **Rules** in `shared` are pure functions over immutable `GameState` (flags, quest progress,
+  NPC memories): conditions, effects, the quest engine, NPC memory, the dialogue runner, tile
+  solidity, schedules, object appearance and the save format. The future server runs the same
+  code.
 - **GameSession** owns the `GameState` and is the only thing that changes it. Callers request
   changes (`applyEffects`, `questEvent`) and observe `state` / `notice` events — the same
   request → validate → broadcast shape a server-authoritative session will have.
+- **Derived world:** NPC positions (`npcPosition`) and object looks (`objectTexture`) are
+  computed from state, never stored; `WorldScene` re-syncs them on every `state` event, so a
+  quest reward like `restaurant_open` visibly changes the town.
+- **Saves** ([ADR-005](../decisions/ADR-005-save-format.md)) store only `GameState` + player
+  tile, versioned and sanitised on load.
 - **Phaser** draws the world and runs physics. **The DOM UI** draws text and buttons
   ([ADR-003](../decisions/ADR-003-dom-ui-overlay.md)).
 
 ## Client (`apps/web/src`)
 
 ```
-main.ts                 load content → services → Phaser game → DOM UI (+ debug API in dev)
+main.ts                 load content + save → services → Phaser game → DOM UI, autosave
+                        (+ debug API in dev)
 config.ts               VITE_ env → typed ClientConfig
 game/
-  services.ts           GameServices: content, input, session, dialogue, world events
-  GameSession.ts        owns GameState; applies effects and quest events; emits notices
-  DialogueController.ts one conversation at a time; produces a DialogueView for the UI
+  services.ts           GameServices: content, input, session, dialogue, save, world events
+  GameSession.ts        owns GameState; applies effects and player events; emits notices
+  DialogueController.ts one conversation at a time with an NPC or object (a Talker)
+  SaveService.ts        save / load / new game, autosave; SaveStorage (localStorage today)
   events.ts             tiny typed emitter (Phaser-free, unit-testable)
   createGame.ts         Phaser.Game config (RESIZE scale mode, arcade physics, scenes)
   resize.ts             ResizeObserver workaround for a Phaser rotation bug
@@ -52,13 +61,16 @@ game/
 art/placeholderArt.ts   programmer art drawn at boot (tileset, characters); replaceable
 scenes/
   BootScene             generates placeholder textures
-  WorldScene            tilemap + collision, player, NPCs, interaction target, location
-                        tracking (→ `reach` quest events), dialogue mode
+  WorldScene            tilemap + collision, player, NPCs and objects synced to state,
+                        interaction target, location tracking (→ `reach` events), dialogue
+                        mode, pause while the menu is open
   UIScene               touch joystick (needs canvas input; everything else is DOM)
 world/TownMap.ts        MapDef → Phaser tilemap layer with collision on solid tiles
-entities/               Player (feet body, intent → velocity), Npc (static feet body)
+entities/               Player (feet body), Npc (static feet body, moves on schedule change),
+                        WorldObject (sign etc.; texture follows state)
 input/                  InputSource + InputManager (move intent + actions), keyboard, joystick
-ui/mountUi.ts           hint, quest tracker, toasts, Talk button, dialogue box (DOM)
+ui/mountUi.ts           hint, quest tracker, toasts, Talk/Look button, dialogue box (DOM)
+ui/menu.ts              Save / Load / New game (confirmed); pauses gameplay
 ```
 
 ### Input
@@ -74,9 +86,11 @@ Actions not consumed in a frame are dropped (`endFrame()`), so a stray tap can n
 
 ### Interaction and quests
 
-Each frame `WorldScene` picks the nearest NPC within `INTERACT_RANGE` (shared) and reports
-changes as `interactTarget`. Interacting starts a dialogue: the NPC's first dialogue whose
-conditions hold is chosen, then a `talk` quest event is sent, then node effects are applied.
+Each frame `WorldScene` picks the nearest NPC or object within `INTERACT_RANGE` (shared) and
+reports changes as `interactTarget`. Interacting starts a dialogue: the first dialogue whose
+conditions hold is chosen, then (NPCs only) a `talk` event is sent — which records
+`PLAYER_MET_NPC` and advances quests — then node effects are applied. Quest givers remember
+completed and failed quests automatically.
 When the player's tile changes, every location containing it is sent as a `reach` quest event
 (also re-sent after quest changes, so a quest started inside its target area still completes).
 
