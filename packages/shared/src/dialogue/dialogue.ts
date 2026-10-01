@@ -27,9 +27,9 @@ export interface AvailableChoice {
   readonly choice: DialogueChoice;
 }
 
-/** Picks the first of the NPC's dialogues whose conditions hold. */
+/** Picks the first of an NPC's (or object's) dialogues whose conditions hold. */
 export function selectDialogue(
-  npc: NpcDef,
+  npc: Pick<NpcDef, 'dialogues'>,
   state: GameState,
   content: GameContent,
 ): DialogueDef | undefined {
