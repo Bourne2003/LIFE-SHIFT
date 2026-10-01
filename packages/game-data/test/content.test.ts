@@ -96,3 +96,76 @@ describe('validateContent catches broken data', () => {
     expect(errors.join('\n')).toMatch(/has no objective 'fly'/);
   });
 });
+
+describe('validateContent: world memory content', () => {
+  const base = rawContent();
+
+  it('flags unknown npcs and quests in memory conditions and effects', () => {
+    const errors = validateContent({
+      ...base,
+      dialogues: {
+        ...base.dialogues,
+        lek_default: {
+          id: 'lek_default',
+          start: 'a',
+          nodes: {
+            a: {
+              text: 'hi',
+              effects: [
+                { type: 'remember', npc: 'nobody', event: 'PLAYER_HELPED_NPC' },
+                { type: 'failQuest', quest: 'q_nope' },
+              ],
+              choices: [
+                {
+                  text: 'x',
+                  when: [{ type: 'memory', npc: 'ghost', event: 'PLAYER_MET_NPC', quest: 'q_x' }],
+                },
+              ],
+            },
+          },
+        },
+      },
+    }).join('\n');
+    expect(errors).toMatch(/unknown npc 'nobody'/);
+    expect(errors).toMatch(/unknown quest 'q_nope'/);
+    expect(errors).toMatch(/unknown npc 'ghost'/);
+    expect(errors).toMatch(/unknown quest 'q_x'/);
+  });
+
+  it('flags objects on blocked tiles, under npcs, or without appearances', () => {
+    const sign = base.objects[0]!;
+    const errors = validateContent({
+      ...base,
+      objects: [
+        { ...sign, position: { x: 0, y: 0 } },
+        { ...sign, id: 'sign2', position: base.npcs[0]!.position, appearances: [] },
+        { ...sign, id: 'noi' },
+      ],
+    }).join('\n');
+    expect(errors).toMatch(/object restaurant_sign position: tile 0,0 is blocked/);
+    expect(errors).toMatch(/object sign2: an npc can stand on its tile/);
+    expect(errors).toMatch(/object sign2: has no appearances/);
+    expect(errors).toMatch(/duplicate npc\/object id 'noi'/);
+  });
+
+  it('checks conditions in npc schedules', () => {
+    const errors = validateContent({
+      ...base,
+      npcs: base.npcs.map((n, i) =>
+        i === 0
+          ? {
+              ...n,
+              schedule: [
+                {
+                  period: 'any',
+                  position: n.position,
+                  when: [{ type: 'quest', quest: 'q_missing', status: 'active' }],
+                },
+              ],
+            }
+          : n,
+      ),
+    }).join('\n');
+    expect(errors).toMatch(/npc noi schedule\[0\]: unknown quest 'q_missing'/);
+  });
+});

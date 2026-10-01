@@ -1,0 +1,20 @@
+[
+  {
+    "id": "sign_closed",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "CLOSED UNTIL FURTHER NOTICE. — Somchai"
+      }
+    }
+  },
+  {
+    "id": "sign_open",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "SOMCHAI'S KITCHEN — OPEN! Today's special: green curry with fresh market vegetables."
+      }
+    }
+  }
+]

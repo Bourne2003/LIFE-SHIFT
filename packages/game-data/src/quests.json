@@ -17,8 +17,59 @@
         "type": "reach",
         "location": "clock_tower"
       },
-      { "id": "return_noi", "description": "Return to Grandma Noi", "type": "talk", "npc": "noi" }
+      {
+        "id": "return_noi",
+        "description": "Return to Grandma Noi",
+        "type": "talk",
+        "npc": "noi"
+      }
     ],
-    "rewards": [{ "type": "setFlag", "flag": "knows_town" }]
+    "rewards": [
+      {
+        "type": "setFlag",
+        "flag": "knows_town"
+      }
+    ]
+  },
+  {
+    "id": "q_delivery",
+    "title": "Fresh Ingredients",
+    "description": "Somchai's Kitchen has been closed since the deliveries stopped. Bring him fresh produce from Mali at the market.",
+    "giver": "somchai",
+    "objectives": [
+      {
+        "id": "collect_produce",
+        "description": "Collect fresh produce from Mali at the market",
+        "type": "talk",
+        "npc": "mali"
+      },
+      {
+        "id": "deliver_somchai",
+        "description": "Bring the produce to Somchai",
+        "type": "talk",
+        "npc": "somchai"
+      }
+    ],
+    "rewards": [
+      {
+        "type": "setFlag",
+        "flag": "restaurant_open"
+      },
+      {
+        "type": "adjustFlag",
+        "flag": "market_reputation",
+        "by": 10
+      },
+      {
+        "type": "remember",
+        "npc": "somchai",
+        "event": "PLAYER_HELPED_NPC"
+      },
+      {
+        "type": "remember",
+        "npc": "mali",
+        "event": "PLAYER_HELPED_NPC"
+      }
+    ]
   }
 ]

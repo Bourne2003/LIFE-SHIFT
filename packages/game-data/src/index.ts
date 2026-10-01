@@ -1,6 +1,14 @@
-import type { DialogueDef, GameContent, MapDef, NpcDef, QuestDef } from '@life-shift/shared';
+import type {
+  DialogueDef,
+  GameContent,
+  MapDef,
+  NpcDef,
+  QuestDef,
+  WorldObjectDef,
+} from '@life-shift/shared';
 import town from './maps/town.json';
 import npcs from './npcs.json';
+import objects from './objects.json';
 import quests from './quests.json';
 import art from './dialogues/art.json';
 import bun from './dialogues/bun.json';
@@ -11,6 +19,7 @@ import mali from './dialogues/mali.json';
 import nina from './dialogues/nina.json';
 import noi from './dialogues/noi.json';
 import ploy from './dialogues/ploy.json';
+import restaurantSign from './dialogues/restaurant_sign.json';
 import somchai from './dialogues/somchai.json';
 import { validateContent } from './validate';
 
@@ -28,6 +37,7 @@ const dialogueFiles = [
   nina,
   noi,
   ploy,
+  restaurantSign,
   somchai,
 ] as unknown as DialogueDef[][];
 
@@ -36,6 +46,7 @@ export function rawContent(): GameContent {
   return {
     map: town as unknown as MapDef,
     npcs: npcs as unknown as NpcDef[],
+    objects: objects as unknown as WorldObjectDef[],
     dialogues: Object.fromEntries(dialogueFiles.flat().map((d) => [d.id, d])),
     quests: Object.fromEntries((quests as unknown as QuestDef[]).map((q) => [q.id, q])),
   };

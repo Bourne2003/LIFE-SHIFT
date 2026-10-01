@@ -1,0 +1,38 @@
+[
+  {
+    "id": "restaurant_sign",
+    "name": "Restaurant sign",
+    "position": {
+      "x": 23,
+      "y": 22
+    },
+    "appearances": [
+      {
+        "texture": "sign_open",
+        "when": [
+          {
+            "type": "flag",
+            "flag": "restaurant_open"
+          }
+        ]
+      },
+      {
+        "texture": "sign_closed"
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "sign_open",
+        "when": [
+          {
+            "type": "flag",
+            "flag": "restaurant_open"
+          }
+        ]
+      },
+      {
+        "dialogue": "sign_closed"
+      }
+    ]
+  }
+]

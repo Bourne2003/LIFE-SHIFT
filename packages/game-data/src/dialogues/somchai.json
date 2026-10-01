@@ -4,7 +4,126 @@
     "start": "a",
     "nodes": {
       "a": {
-        "text": "Kitchen's closed. No deliveries came this week, and I won't cook with bad ingredients."
+        "text": "Kitchen's closed. No deliveries came this week, and I won't cook with bad ingredients.",
+        "choices": [
+          {
+            "text": "Can I help?",
+            "next": "offer"
+          },
+          {
+            "text": "That's a shame."
+          }
+        ]
+      },
+      "offer": {
+        "text": "You'd do that? Mali at the market has produce set aside for me. Bring it here and I'll fire up the stove.",
+        "choices": [
+          {
+            "text": "I'll get it.",
+            "next": "accepted",
+            "effects": [
+              {
+                "type": "startQuest",
+                "quest": "q_delivery"
+              }
+            ]
+          },
+          {
+            "text": "Maybe another time."
+          }
+        ]
+      },
+      "accepted": {
+        "text": "Her stall is the one with all the shouting. You can't miss it."
+      }
+    }
+  },
+  {
+    "id": "somchai_waiting",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Any luck with Mali?",
+        "choices": [
+          {
+            "text": "On my way.",
+            "when": [
+              {
+                "type": "quest",
+                "quest": "q_delivery",
+                "status": "active",
+                "objective": "collect_produce"
+              }
+            ]
+          },
+          {
+            "text": "Actually... I can't do this.",
+            "next": "gave_up",
+            "effects": [
+              {
+                "type": "failQuest",
+                "quest": "q_delivery"
+              }
+            ]
+          }
+        ]
+      },
+      "gave_up": {
+        "text": "I see. Then the kitchen stays closed."
+      }
+    }
+  },
+  {
+    "id": "somchai_retry",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Oh. It's you. Changed your mind?",
+        "choices": [
+          {
+            "text": "Yes — I'll get the produce this time.",
+            "next": "again",
+            "effects": [
+              {
+                "type": "startQuest",
+                "quest": "q_delivery"
+              }
+            ]
+          },
+          {
+            "text": "No."
+          }
+        ]
+      },
+      "again": {
+        "text": "Fine. One more chance."
+      }
+    }
+  },
+  {
+    "id": "somchai_delivery",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "speaker": "player",
+        "text": "Fresh from Mali's stall.",
+        "next": "b"
+      },
+      "b": {
+        "text": "Look at these! Now THIS is a vegetable. Stand back — Somchai's Kitchen is open again!"
+      }
+    }
+  },
+  {
+    "id": "somchai_open",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Welcome to Somchai's Kitchen!",
+        "next": "b"
+      },
+      "b": {
+        "text": "For you, the curry is always on the house. The whole street is talking about what you did."
       }
     }
   }

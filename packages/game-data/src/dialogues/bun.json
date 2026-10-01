@@ -3,9 +3,27 @@
     "id": "bun_default",
     "start": "a",
     "nodes": {
-      "a": { "text": "Caught a fish this big in that pond once.", "next": "b" },
-      "b": { "speaker": "player", "text": "That pond is tiny.", "next": "c" },
-      "c": { "text": "..." }
+      "a": {
+        "text": "Caught a fish this big in that pond once.",
+        "next": "b"
+      },
+      "b": {
+        "speaker": "player",
+        "text": "That pond is tiny.",
+        "next": "c"
+      },
+      "c": {
+        "text": "..."
+      }
+    }
+  },
+  {
+    "id": "bun_restaurant",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Somchai's open again! I haven't moved from this spot since. Don't tell him I said the curry's good."
+      }
     }
   }
 ]

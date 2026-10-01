@@ -30,6 +30,17 @@ export function validateContent(content: GameContent): string[] {
   const npcIds = new Set(content.npcs.map((n) => n.id));
   const locationIds = new Set(content.map.locations.map((l) => l.id));
   const usedDialogues = new Set<string>();
+  const checkDialogueRefs = (
+    where: string,
+    refs: readonly { dialogue: string; when?: readonly Condition[] }[],
+  ) => {
+    if (refs.length === 0) err(`${where}: has no dialogues`);
+    refs.forEach((ref, i) => {
+      usedDialogues.add(ref.dialogue);
+      if (!content.dialogues[ref.dialogue]) err(`${where}: unknown dialogue '${ref.dialogue}'`);
+      checkConditions(`${where} dialogues[${i}]`, ref.when);
+    });
+  };
 
   const checkTile = (where: string, tile: TilePos) => {
     if (grid && isSolid(grid, tile)) err(`${where}: tile ${tile.x},${tile.y} is blocked`);
@@ -40,6 +51,11 @@ export function validateContent(content: GameContent): string[] {
   };
   const checkCondition = (where: string, c: Condition): void => {
     if (c.type === 'not') return checkCondition(where, c.condition);
+    if (c.type === 'memory') {
+      if (!npcIds.has(c.npc)) err(`${where}: unknown npc '${c.npc}'`);
+      if (c.quest && !content.quests[c.quest]) err(`${where}: unknown quest '${c.quest}'`);
+      return;
+    }
     if (c.type !== 'quest') return;
     const quest = content.quests[c.quest];
     if (!quest) return err(`${where}: unknown quest '${c.quest}'`);
@@ -49,9 +65,10 @@ export function validateContent(content: GameContent): string[] {
   };
   const checkEffects = (where: string, effects: readonly Effect[] | undefined) => {
     for (const e of effects ?? []) {
-      if (e.type === 'startQuest' && !content.quests[e.quest]) {
+      if ((e.type === 'startQuest' || e.type === 'failQuest') && !content.quests[e.quest]) {
         err(`${where}: unknown quest '${e.quest}'`);
       }
+      if (e.type === 'remember' && !npcIds.has(e.npc)) err(`${where}: unknown npc '${e.npc}'`);
     }
   };
 
@@ -83,18 +100,14 @@ export function validateContent(content: GameContent): string[] {
     const where = `npc ${npc.id}`;
     if (!/^#[0-9a-f]{6}$/i.test(npc.color)) err(`${where}: color must look like #rrggbb`);
     checkTile(`${where} position`, npc.position);
-    const key = `${npc.position.x},${npc.position.y}`;
+    const key = tileKey(npc.position);
     if (occupied.has(key)) err(`${where}: shares tile ${key} with ${occupied.get(key)}`);
     occupied.set(key, npc.id);
-    npc.schedule.forEach((s, i) => checkTile(`${where} schedule[${i}]`, s.position));
-    if (npc.dialogues.length === 0) err(`${where}: has no dialogues`);
-    npc.dialogues.forEach((ref, i) => {
-      usedDialogues.add(ref.dialogue);
-      if (!content.dialogues[ref.dialogue]) {
-        err(`${where}: unknown dialogue '${ref.dialogue}'`);
-      }
-      checkConditions(`${where} dialogues[${i}]`, ref.when);
+    npc.schedule.forEach((s, i) => {
+      checkTile(`${where} schedule[${i}]`, s.position);
+      checkConditions(`${where} schedule[${i}]`, s.when);
     });
+    checkDialogueRefs(where, npc.dialogues);
     for (const other of Object.keys(npc.relationships)) {
       if (!npcIds.has(other)) err(`${where}: relationship with unknown npc '${other}'`);
     }
@@ -103,11 +116,32 @@ export function validateContent(content: GameContent): string[] {
     }
   }
 
+  // --- World objects ----------------------------------------------------------------------
+  findDuplicates([...npcIds, ...content.objects.map((o) => o.id)]).forEach((id) =>
+    err(`duplicate npc/object id '${id}'`),
+  );
+  const npcTiles = new Set(
+    content.npcs.flatMap((n) => [n.position, ...n.schedule.map((s) => s.position)]).map(tileKey),
+  );
+  for (const object of content.objects) {
+    const where = `object ${object.id}`;
+    checkTile(`${where} position`, object.position);
+    if (npcTiles.has(tileKey(object.position))) {
+      err(`${where}: an npc can stand on its tile ${tileKey(object.position)}`);
+    }
+    if (object.appearances.length === 0) err(`${where}: has no appearances`);
+    object.appearances.forEach((a, i) => {
+      if (!a.texture) err(`${where} appearances[${i}]: texture is empty`);
+      checkConditions(`${where} appearances[${i}]`, a.when);
+    });
+    checkDialogueRefs(where, object.dialogues);
+  }
+
   // --- Dialogues --------------------------------------------------------------------------
   for (const [key, dialogue] of Object.entries(content.dialogues)) {
     const where = `dialogue ${key}`;
     if (dialogue.id !== key) err(`${where}: id '${dialogue.id}' does not match its key`);
-    if (!usedDialogues.has(key)) err(`${where}: not used by any npc`);
+    if (!usedDialogues.has(key)) err(`${where}: not used by any npc or object`);
     if (!dialogue.nodes[dialogue.start]) err(`${where}: start node '${dialogue.start}' missing`);
 
     for (const [nodeId, node] of Object.entries(dialogue.nodes)) {
@@ -167,6 +201,10 @@ function unreachableNodes(dialogue: DialogueDef): string[] {
     for (const c of node.choices ?? []) if (c.next) queue.push(c.next);
   }
   return Object.keys(dialogue.nodes).filter((id) => !seen.has(id));
+}
+
+function tileKey(tile: TilePos): string {
+  return `${tile.x},${tile.y}`;
 }
 
 function findDuplicates(ids: readonly string[]): string[] {

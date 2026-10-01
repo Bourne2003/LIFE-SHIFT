@@ -3,7 +3,10 @@
     "id": "ken_quest",
     "start": "a",
     "nodes": {
-      "a": { "text": "Auntie Noi sent you? Of course she did.", "next": "b" },
+      "a": {
+        "text": "Auntie Noi sent you? Of course she did.",
+        "next": "b"
+      },
       "b": {
         "text": "Welcome. If you need anything — rice, batteries, gossip — I've got it.",
         "next": "c"
@@ -17,6 +20,19 @@
   {
     "id": "ken_default",
     "start": "a",
-    "nodes": { "a": { "text": "Shop's open. Don't tell Mali, but my mangoes are better." } }
+    "nodes": {
+      "a": {
+        "text": "New face! I'm Ken. This is my shop. Don't tell Mali, but my mangoes are better."
+      }
+    }
+  },
+  {
+    "id": "ken_again",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Back again? Shop's open. Still the best mangoes in town, whatever Mali says."
+      }
+    }
   }
 ]

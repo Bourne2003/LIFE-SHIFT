@@ -5,26 +5,59 @@
     "occupation": "Landlady",
     "personality": ["warm", "nosy", "proud of the neighbourhood"],
     "color": "#c0739a",
-    "position": { "x": 12, "y": 11 },
-    "schedule": [{ "period": "any", "position": { "x": 12, "y": 11 } }],
+    "position": {
+      "x": 12,
+      "y": 11
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 12,
+          "y": 11
+        }
+      }
+    ],
     "dialogues": [
       {
         "dialogue": "noi_quest_done",
         "when": [
-          { "type": "quest", "quest": "q_know_town", "status": "active", "objective": "return_noi" }
+          {
+            "type": "quest",
+            "quest": "q_know_town",
+            "status": "active",
+            "objective": "return_noi"
+          }
         ]
       },
       {
         "dialogue": "noi_quest_waiting",
-        "when": [{ "type": "quest", "quest": "q_know_town", "status": "active" }]
+        "when": [
+          {
+            "type": "quest",
+            "quest": "q_know_town",
+            "status": "active"
+          }
+        ]
       },
       {
         "dialogue": "noi_after",
-        "when": [{ "type": "quest", "quest": "q_know_town", "status": "completed" }]
+        "when": [
+          {
+            "type": "quest",
+            "quest": "q_know_town",
+            "status": "completed"
+          }
+        ]
       },
-      { "dialogue": "noi_intro" }
+      {
+        "dialogue": "noi_intro"
+      }
     ],
-    "relationships": { "ken": "family", "dao": "friend" },
+    "relationships": {
+      "ken": "family",
+      "dao": "friend"
+    },
     "quests": ["q_know_town"]
   },
   {
@@ -33,18 +66,49 @@
     "occupation": "Shopkeeper",
     "personality": ["practical", "dry humour"],
     "color": "#4f8fd9",
-    "position": { "x": 36, "y": 11 },
-    "schedule": [{ "period": "any", "position": { "x": 36, "y": 11 } }],
+    "position": {
+      "x": 36,
+      "y": 11
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 36,
+          "y": 11
+        }
+      }
+    ],
     "dialogues": [
       {
         "dialogue": "ken_quest",
         "when": [
-          { "type": "quest", "quest": "q_know_town", "status": "active", "objective": "talk_ken" }
+          {
+            "type": "quest",
+            "quest": "q_know_town",
+            "status": "active",
+            "objective": "talk_ken"
+          }
         ]
       },
-      { "dialogue": "ken_default" }
+      {
+        "dialogue": "ken_again",
+        "when": [
+          {
+            "type": "memory",
+            "npc": "ken",
+            "event": "PLAYER_MET_NPC"
+          }
+        ]
+      },
+      {
+        "dialogue": "ken_default"
+      }
     ],
-    "relationships": { "noi": "family", "mali": "rival" },
+    "relationships": {
+      "noi": "family",
+      "mali": "rival"
+    },
     "quests": ["q_know_town"]
   },
   {
@@ -53,11 +117,50 @@
     "occupation": "Fruit vendor",
     "personality": ["cheerful", "loud", "competitive"],
     "color": "#e0a32e",
-    "position": { "x": 24, "y": 5 },
-    "schedule": [{ "period": "any", "position": { "x": 24, "y": 5 } }],
-    "dialogues": [{ "dialogue": "mali_default" }],
-    "relationships": { "ken": "rival", "nina": "friend" },
-    "quests": []
+    "position": {
+      "x": 24,
+      "y": 5
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 24,
+          "y": 5
+        }
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "mali_delivery",
+        "when": [
+          {
+            "type": "quest",
+            "quest": "q_delivery",
+            "status": "active",
+            "objective": "collect_produce"
+          }
+        ]
+      },
+      {
+        "dialogue": "mali_gossip",
+        "when": [
+          {
+            "type": "flag",
+            "flag": "market_reputation",
+            "atLeast": 10
+          }
+        ]
+      },
+      {
+        "dialogue": "mali_default"
+      }
+    ],
+    "relationships": {
+      "ken": "rival",
+      "nina": "friend"
+    },
+    "quests": ["q_delivery"]
   },
   {
     "id": "somchai",
@@ -65,11 +168,81 @@
     "occupation": "Restaurant owner",
     "personality": ["passionate", "stubborn"],
     "color": "#d9544f",
-    "position": { "x": 27, "y": 23 },
-    "schedule": [{ "period": "any", "position": { "x": 27, "y": 23 } }],
-    "dialogues": [{ "dialogue": "somchai_default" }],
-    "relationships": { "bun": "friend" },
-    "quests": []
+    "position": {
+      "x": 27,
+      "y": 23
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 26,
+          "y": 22
+        },
+        "when": [
+          {
+            "type": "flag",
+            "flag": "restaurant_open"
+          }
+        ]
+      },
+      {
+        "period": "any",
+        "position": {
+          "x": 27,
+          "y": 23
+        }
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "somchai_delivery",
+        "when": [
+          {
+            "type": "quest",
+            "quest": "q_delivery",
+            "status": "active",
+            "objective": "deliver_somchai"
+          }
+        ]
+      },
+      {
+        "dialogue": "somchai_open",
+        "when": [
+          {
+            "type": "flag",
+            "flag": "restaurant_open"
+          }
+        ]
+      },
+      {
+        "dialogue": "somchai_waiting",
+        "when": [
+          {
+            "type": "quest",
+            "quest": "q_delivery",
+            "status": "active"
+          }
+        ]
+      },
+      {
+        "dialogue": "somchai_retry",
+        "when": [
+          {
+            "type": "quest",
+            "quest": "q_delivery",
+            "status": "failed"
+          }
+        ]
+      },
+      {
+        "dialogue": "somchai_default"
+      }
+    ],
+    "relationships": {
+      "bun": "friend"
+    },
+    "quests": ["q_delivery"]
   },
   {
     "id": "ploy",
@@ -77,10 +250,27 @@
     "occupation": "Student",
     "personality": ["curious", "restless"],
     "color": "#8a6fd1",
-    "position": { "x": 13, "y": 21 },
-    "schedule": [{ "period": "any", "position": { "x": 13, "y": 21 } }],
-    "dialogues": [{ "dialogue": "ploy_default" }],
-    "relationships": { "lek": "family" },
+    "position": {
+      "x": 13,
+      "y": 21
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 13,
+          "y": 21
+        }
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "ploy_default"
+      }
+    ],
+    "relationships": {
+      "lek": "family"
+    },
     "quests": []
   },
   {
@@ -89,9 +279,24 @@
     "occupation": "Mail carrier",
     "personality": ["chatty", "always in a hurry"],
     "color": "#3fa66b",
-    "position": { "x": 16, "y": 13 },
-    "schedule": [{ "period": "any", "position": { "x": 16, "y": 13 } }],
-    "dialogues": [{ "dialogue": "art_default" }],
+    "position": {
+      "x": 16,
+      "y": 13
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 16,
+          "y": 13
+        }
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "art_default"
+      }
+    ],
     "relationships": {},
     "quests": []
   },
@@ -101,10 +306,27 @@
     "occupation": "Gardener",
     "personality": ["quiet", "patient"],
     "color": "#6b8e23",
-    "position": { "x": 5, "y": 21 },
-    "schedule": [{ "period": "any", "position": { "x": 5, "y": 21 } }],
-    "dialogues": [{ "dialogue": "lek_default" }],
-    "relationships": { "ploy": "family" },
+    "position": {
+      "x": 5,
+      "y": 21
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 5,
+          "y": 21
+        }
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "lek_default"
+      }
+    ],
+    "relationships": {
+      "ploy": "family"
+    },
     "quests": []
   },
   {
@@ -113,10 +335,27 @@
     "occupation": "Clock tower keeper",
     "personality": ["precise", "nostalgic"],
     "color": "#9a7b4f",
-    "position": { "x": 32, "y": 24 },
-    "schedule": [{ "period": "any", "position": { "x": 32, "y": 24 } }],
-    "dialogues": [{ "dialogue": "dao_default" }],
-    "relationships": { "noi": "friend" },
+    "position": {
+      "x": 32,
+      "y": 24
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 32,
+          "y": 24
+        }
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "dao_default"
+      }
+    ],
+    "relationships": {
+      "noi": "friend"
+    },
     "quests": []
   },
   {
@@ -125,10 +364,27 @@
     "occupation": "Street artist",
     "personality": ["dreamy", "observant"],
     "color": "#d36fb0",
-    "position": { "x": 30, "y": 10 },
-    "schedule": [{ "period": "any", "position": { "x": 30, "y": 10 } }],
-    "dialogues": [{ "dialogue": "nina_default" }],
-    "relationships": { "mali": "friend" },
+    "position": {
+      "x": 30,
+      "y": 10
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 30,
+          "y": 10
+        }
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "nina_default"
+      }
+    ],
+    "relationships": {
+      "mali": "friend"
+    },
     "quests": []
   },
   {
@@ -137,10 +393,49 @@
     "occupation": "Retired fisherman",
     "personality": ["storyteller", "lazy"],
     "color": "#5a7a8c",
-    "position": { "x": 15, "y": 23 },
-    "schedule": [{ "period": "any", "position": { "x": 15, "y": 23 } }],
-    "dialogues": [{ "dialogue": "bun_default" }],
-    "relationships": { "somchai": "friend" },
+    "position": {
+      "x": 15,
+      "y": 23
+    },
+    "schedule": [
+      {
+        "period": "any",
+        "position": {
+          "x": 28,
+          "y": 23
+        },
+        "when": [
+          {
+            "type": "flag",
+            "flag": "restaurant_open"
+          }
+        ]
+      },
+      {
+        "period": "any",
+        "position": {
+          "x": 15,
+          "y": 23
+        }
+      }
+    ],
+    "dialogues": [
+      {
+        "dialogue": "bun_restaurant",
+        "when": [
+          {
+            "type": "flag",
+            "flag": "restaurant_open"
+          }
+        ]
+      },
+      {
+        "dialogue": "bun_default"
+      }
+    ],
+    "relationships": {
+      "somchai": "friend"
+    },
     "quests": []
   }
 ]
