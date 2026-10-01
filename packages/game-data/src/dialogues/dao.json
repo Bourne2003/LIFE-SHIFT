@@ -1,0 +1,13 @@
+[
+  {
+    "id": "dao_default",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "This clock has kept time for ninety years. It has never once been late.",
+        "choices": [{ "text": "Can I go up the tower?", "next": "up" }, { "text": "Impressive." }]
+      },
+      "up": { "text": "Not today. Perhaps when you've earned the town's trust." }
+    }
+  }
+]

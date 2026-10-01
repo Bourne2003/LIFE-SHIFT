@@ -1,0 +1,11 @@
+[
+  {
+    "id": "bun_default",
+    "start": "a",
+    "nodes": {
+      "a": { "text": "Caught a fish this big in that pond once.", "next": "b" },
+      "b": { "speaker": "player", "text": "That pond is tiny.", "next": "c" },
+      "c": { "text": "..." }
+    }
+  }
+]

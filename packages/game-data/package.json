@@ -1,0 +1,16 @@
+{
+  "name": "@life-shift/game-data",
+  "private": true,
+  "version": "0.1.0",
+  "description": "LIFE SHIFT content: map, NPCs, dialogue and quests as JSON, plus a validator.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@life-shift/shared": "*"
+  }
+}

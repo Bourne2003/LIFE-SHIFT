@@ -1,0 +1,22 @@
+[
+  {
+    "id": "ken_quest",
+    "start": "a",
+    "nodes": {
+      "a": { "text": "Auntie Noi sent you? Of course she did.", "next": "b" },
+      "b": {
+        "text": "Welcome. If you need anything — rice, batteries, gossip — I've got it.",
+        "next": "c"
+      },
+      "c": {
+        "speaker": "player",
+        "text": "Thanks, Ken. She also told me to see the clock tower."
+      }
+    }
+  },
+  {
+    "id": "ken_default",
+    "start": "a",
+    "nodes": { "a": { "text": "Shop's open. Don't tell Mali, but my mangoes are better." } }
+  }
+]

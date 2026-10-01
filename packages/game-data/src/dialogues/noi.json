@@ -1,0 +1,53 @@
+[
+  {
+    "id": "noi_intro",
+    "start": "greet",
+    "nodes": {
+      "greet": {
+        "text": "Ah, you must be my new tenant! Welcome to Ban Suan, dear.",
+        "next": "offer"
+      },
+      "offer": {
+        "text": "A home is more than four walls. Why don't you go and meet the neighbours?",
+        "choices": [
+          { "text": "Sure, where should I start?", "next": "accept" },
+          { "text": "Maybe later.", "next": "decline" }
+        ]
+      },
+      "accept": {
+        "text": "Start with my nephew Ken at the corner shop, then see the clock tower. Come back and tell me what you think!",
+        "effects": [{ "type": "startQuest", "quest": "q_know_town" }]
+      },
+      "decline": { "text": "Suit yourself. I'll be right here when you're ready." }
+    }
+  },
+  {
+    "id": "noi_quest_waiting",
+    "start": "a",
+    "nodes": {
+      "a": { "text": "Still exploring? Ken's shop is east of the market, past the avenue." }
+    }
+  },
+  {
+    "id": "noi_quest_done",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Back already! So, what do you think of our little town?",
+        "choices": [
+          { "text": "I love it here.", "next": "love" },
+          { "text": "It's... quiet.", "next": "quiet" }
+        ]
+      },
+      "love": { "text": "Ha! I knew you would. You're one of us now." },
+      "quiet": { "text": "Quiet? Just wait. Things here have a way of changing." }
+    }
+  },
+  {
+    "id": "noi_after",
+    "start": "a",
+    "nodes": {
+      "a": { "text": "Everyone's been talking about you, you know. Good things, mostly." }
+    }
+  }
+]

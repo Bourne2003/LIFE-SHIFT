@@ -1,0 +1,11 @@
+[
+  {
+    "id": "nina_default",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "I'm painting the market as it is now. Places change faster than people notice."
+      }
+    }
+  }
+]

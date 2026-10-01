@@ -1,0 +1,24 @@
+[
+  {
+    "id": "q_know_town",
+    "title": "Getting to Know Ban Suan",
+    "description": "Grandma Noi wants you to meet the neighbours and see the town's landmark.",
+    "giver": "noi",
+    "objectives": [
+      {
+        "id": "talk_ken",
+        "description": "Say hello to Ken at the corner shop",
+        "type": "talk",
+        "npc": "ken"
+      },
+      {
+        "id": "visit_clock_tower",
+        "description": "Visit the Clock Tower Plaza",
+        "type": "reach",
+        "location": "clock_tower"
+      },
+      { "id": "return_noi", "description": "Return to Grandma Noi", "type": "talk", "npc": "noi" }
+    ],
+    "rewards": [{ "type": "setFlag", "flag": "knows_town" }]
+  }
+]

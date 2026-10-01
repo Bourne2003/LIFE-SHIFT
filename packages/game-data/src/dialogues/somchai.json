@@ -1,0 +1,11 @@
+[
+  {
+    "id": "somchai_default",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Kitchen's closed. No deliveries came this week, and I won't cook with bad ingredients."
+      }
+    }
+  }
+]

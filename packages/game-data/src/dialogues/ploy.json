@@ -1,0 +1,11 @@
+[
+  {
+    "id": "ploy_default",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Uncle Lek says there's a garden nobody visits anymore. Somewhere behind the hedges..."
+      }
+    }
+  }
+]

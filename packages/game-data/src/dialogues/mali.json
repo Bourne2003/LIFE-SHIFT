@@ -1,0 +1,13 @@
+[
+  {
+    "id": "mali_default",
+    "start": "a",
+    "nodes": {
+      "a": {
+        "text": "Fresh fruit! Sweetest in Ban Suan! Whatever Ken says is a lie.",
+        "choices": [{ "text": "What's good today?", "next": "good" }, { "text": "Just looking." }]
+      },
+      "good": { "text": "Everything! But the mangosteen... oh, the mangosteen." }
+    }
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "id": "art_default",
+    "start": "a",
+    "nodes": {
+      "a": { "text": "Can't stop! Letters don't deliver themselves.", "next": "b" },
+      "b": { "text": "Well, they will once the town gets those drones. Ha!" }
+    }
+  }
+]
