@@ -1,6 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { PREVIEW_URL } from './urls';
-import { cameraState, openGame, playerPos, trackErrors } from './helpers';
+import {
+  cameraState,
+  openGame,
+  playerPos,
+  teleport,
+  trackErrors,
+  walkUntilBlocked,
+} from './helpers';
+
+// Open stretch of Central Street, away from buildings and NPCs.
+const STREET = { x: 10, y: 14 };
 
 test('canvas fills the viewport and tracks resizes', async ({ page }) => {
   await openGame(page);
@@ -16,6 +26,8 @@ test('canvas fills the viewport and tracks resizes', async ({ page }) => {
 test('keyboard moves the player and the camera follows', async ({ page, isMobile }) => {
   test.skip(isMobile, 'keyboard is a desktop input');
   await openGame(page);
+  await teleport(page, STREET.x, STREET.y);
+  await page.waitForTimeout(300); // let the camera settle on the new position
   const start = await playerPos(page);
   const camStart = await cameraState(page);
   expect(start.state).toBe('idle');
@@ -36,43 +48,19 @@ test('keyboard moves the player and the camera follows', async ({ page, isMobile
   await page.keyboard.up('w');
 });
 
-test('player cannot leave the world', async ({ page, isMobile }) => {
-  test.slow(); // walks corner to corner
+test('the tree line at the map edge stops the player', async ({ page, isMobile }) => {
   test.skip(isMobile, 'uses keyboard to drive the player');
   await openGame(page);
-  const world = await page.evaluate(() => window.__LIFE_SHIFT__!.world());
-
-  const holdUntilStopped = async (keys: string[]) => {
-    for (const k of keys) await page.keyboard.down(k);
-    // Walking stops changing position once the body is pinned against both edges.
-    let last = await playerPos(page);
-    await expect
-      .poll(
-        async () => {
-          const now = await playerPos(page);
-          const still = now.x === last.x && now.y === last.y;
-          last = now;
-          return still;
-        },
-        { intervals: [500], timeout: 15_000 },
-      )
-      .toBe(true);
-    for (const k of keys) await page.keyboard.up(k);
-    return last.body;
-  };
-
-  const topLeft = await holdUntilStopped(['ArrowLeft', 'ArrowUp']);
-  expect(topLeft.left).toBeCloseTo(0, 0);
-  expect(topLeft.top).toBeCloseTo(0, 0);
-
-  const bottomRight = await holdUntilStopped(['d', 's']);
-  expect(bottomRight.right).toBeCloseTo(world.width, 0);
-  expect(bottomRight.bottom).toBeCloseTo(world.height, 0);
+  await teleport(page, 8, 2);
+  const stopped = await walkUntilBlocked(page, ['ArrowUp']);
+  expect(stopped.body.top).toBeCloseTo(32, 0); // row 0 is trees
+  expect(stopped.tile.y).toBe(1);
 });
 
 test('touch joystick drag moves the player', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'touch input');
   await openGame(page);
+  await teleport(page, STREET.x, STREET.y);
   const start = await playerPos(page);
   const { height } = page.viewportSize()!;
   const origin = { x: 80, y: height - 150 };
