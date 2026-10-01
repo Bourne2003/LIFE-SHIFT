@@ -53,3 +53,18 @@ export async function walkUntilBlocked(page: Page, keys: string[]) {
   for (const k of keys) await page.keyboard.up(k);
   return last;
 }
+
+/**
+ * Ends the current conversation: presses E through lines and, when a choice is offered, picks
+ * the last one (by content convention the "leave / no thanks" option).
+ */
+export async function finishConversation(page: Page): Promise<void> {
+  const dialogue = page.getByTestId('dialogue');
+  for (let i = 0; i < 15 && (await dialogue.isVisible()); i++) {
+    const choices = dialogue.getByRole('button');
+    if ((await choices.count()) > 0) await choices.last().click();
+    else await page.keyboard.press('e');
+    await page.waitForTimeout(50);
+  }
+  await expect(dialogue).toBeHidden();
+}

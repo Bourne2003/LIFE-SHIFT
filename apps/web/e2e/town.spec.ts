@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openGame, playerPos, teleport, trackErrors, walkUntilBlocked } from './helpers';
+import {
+  openGame,
+  playerPos,
+  teleport,
+  trackErrors,
+  walkUntilBlocked,
+  finishConversation,
+} from './helpers';
 
 // Tiles from packages/game-data (see maps/town.json and npcs.json).
 const BELOW_NOI = { x: 12, y: 12 };
@@ -15,15 +22,6 @@ const quest = (page: Page) =>
 async function talkTo(page: Page, npc: string, tile: { x: number; y: number }) {
   await teleport(page, tile.x, tile.y);
   await expect.poll(() => page.evaluate(() => window.__LIFE_SHIFT__!.target())).toBe(npc);
-}
-
-/** Presses E until the conversation closes (fails if it is stuck on a choice). */
-async function finishConversation(page: Page) {
-  for (let i = 0; i < 10 && (await dialogue(page).isVisible()); i++) {
-    await page.keyboard.press('e');
-    await page.waitForTimeout(50);
-  }
-  await expect(dialogue(page)).toBeHidden();
 }
 
 test.describe('desktop', () => {

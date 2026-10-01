@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openGame, playerPos, teleport, trackErrors } from './helpers';
+import { openGame, playerPos, teleport, trackErrors, finishConversation } from './helpers';
 
 // Tiles from packages/game-data (maps/town.json, npcs.json, objects.json).
 const BELOW_SOMCHAI = { x: 27, y: 24 };
@@ -8,6 +8,14 @@ const BELOW_KEN = { x: 36, y: 12 };
 const BY_SIGN = { x: 23, y: 23 };
 const STREET = { x: 10, y: 14 };
 const SAVE_KEY = 'life-shift:save:slot1';
+// A new game: ฿100 and a bottle of water (packages/game-data/src/economy.json).
+const NEW_GAME = {
+  flags: {},
+  quests: {},
+  memories: {},
+  money: 100,
+  inventory: [{ item: 'water', quantity: 1 }],
+};
 
 const dialogue = (page: Page) => page.getByTestId('dialogue');
 const toasts = (page: Page) => page.getByTestId('toasts');
@@ -20,14 +28,6 @@ async function interactWith(page: Page, id: string, tile: { x: number; y: number
   await expect.poll(() => page.evaluate(() => window.__LIFE_SHIFT__!.target())).toBe(id);
   await page.keyboard.press('e');
   await expect(dialogue(page)).toBeVisible();
-}
-
-async function finishConversation(page: Page) {
-  for (let i = 0; i < 10 && (await dialogue(page).isVisible()); i++) {
-    await page.keyboard.press('e');
-    await page.waitForTimeout(50);
-  }
-  await expect(dialogue(page)).toBeHidden();
 }
 
 async function acceptDelivery(page: Page) {
@@ -155,12 +155,12 @@ test.describe('desktop', () => {
 
     await page.getByTestId('menu-reset').click();
     await expect(toasts(page)).toContainText('New game started');
-    expect(await state(page)).toEqual({ flags: {}, quests: {}, memories: {} });
+    expect(await state(page)).toEqual(NEW_GAME);
     expect((await playerPos(page)).tile).toEqual({ x: 4, y: 7 });
 
     await page.reload();
     await openGame(page);
-    expect(await state(page)).toEqual({ flags: {}, quests: {}, memories: {} });
+    expect(await state(page)).toEqual(NEW_GAME);
     await expect(page.getByTestId('quest-tracker')).toBeHidden();
   });
 
@@ -184,7 +184,7 @@ test.describe('desktop', () => {
       SAVE_KEY,
     );
     await openGame(page);
-    expect(await state(page)).toEqual({ flags: {}, quests: {}, memories: {} });
+    expect(await state(page)).toEqual(NEW_GAME);
     await openMenu(page);
     await expect(page.getByTestId('save-status')).toHaveText('Not saved yet');
     expect(errors).toEqual([]);
