@@ -5,6 +5,7 @@
  */
 export const TextureKeys = {
   Player: 'player',
-  Ground: 'ground',
-  Road: 'road',
+  /** One tile per entry of TILE_KINDS, left to right. */
+  Tiles: 'tiles',
+  npc: (npcId: string) => `npc:${npcId}`,
 } as const;

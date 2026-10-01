@@ -24,3 +24,19 @@ describe('InputManager', () => {
     expect(input.getMoveIntent()).toEqual(IDLE_INTENT);
   });
 });
+
+describe('InputManager actions', () => {
+  it('delivers each press once', () => {
+    const input = new InputManager();
+    input.press('interact');
+    expect(input.consume('interact')).toBe(true);
+    expect(input.consume('interact')).toBe(false);
+  });
+
+  it('drops unconsumed presses at the end of the frame', () => {
+    const input = new InputManager();
+    input.press('cancel');
+    input.endFrame();
+    expect(input.consume('cancel')).toBe(false);
+  });
+});

@@ -5,6 +5,7 @@ import {
   intentToVelocity,
   type Facing,
   type MoveIntent,
+  type Vec2,
 } from '@life-shift/shared';
 import { TextureKeys } from '../game/assets';
 
@@ -33,6 +34,21 @@ export class Player {
 
   get state(): PlayerState {
     return this._state;
+  }
+
+  /** Where the player's feet are: used for interaction range and location checks. */
+  get position(): Vec2 {
+    return this.sprite.body.center;
+  }
+
+  /** Moves the player so their feet are at `feet` (spawning, loading, debug). */
+  placeFeetAt(feet: Vec2): void {
+    const b = this.sprite.body;
+    this.sprite.body.reset(
+      feet.x - b.offset.x - b.halfWidth + this.sprite.displayOriginX,
+      feet.y - b.offset.y - b.halfHeight + this.sprite.displayOriginY,
+    );
+    this.sprite.setDepth(this.sprite.y);
   }
 
   applyIntent(intent: MoveIntent): void {

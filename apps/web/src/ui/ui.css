@@ -1,0 +1,195 @@
+/* DOM UI layered over the game canvas. The root lets pointer events fall through to the canvas
+   (joystick); only actual controls catch them. */
+.ui {
+  --ui-bg: rgba(20, 26, 24, 0.82);
+  --ui-fg: #f4f1e8;
+  --ui-muted: #c9c3b3;
+  --ui-accent: #f2c14e;
+  --ui-gap: 12px;
+  --ui-safe-top: max(var(--ui-gap), env(safe-area-inset-top));
+  --ui-safe-bottom: max(var(--ui-gap), env(safe-area-inset-bottom));
+  --ui-safe-left: max(var(--ui-gap), env(safe-area-inset-left));
+  --ui-safe-right: max(var(--ui-gap), env(safe-area-inset-right));
+
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    'Noto Sans Thai',
+    sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--ui-fg);
+}
+
+.ui .is-hidden {
+  display: none !important;
+}
+
+.ui-panel {
+  background: var(--ui-bg);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.ui kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  margin-right: 0.5em;
+  padding: 0 0.35em;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  font: inherit;
+  font-size: 0.85em;
+  text-align: center;
+}
+
+/* Show input hints for the device actually in use. */
+.when-coarse {
+  display: none;
+}
+@media (pointer: coarse) {
+  .when-fine {
+    display: none !important;
+  }
+  .when-coarse {
+    display: inline;
+  }
+}
+
+.ui-hint {
+  position: absolute;
+  top: var(--ui-safe-top);
+  left: var(--ui-safe-left);
+  max-width: calc(50vw - 2 * var(--ui-gap));
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.ui-tracker {
+  position: absolute;
+  top: var(--ui-safe-top);
+  right: var(--ui-safe-right);
+  max-width: min(320px, calc(50vw - 2 * var(--ui-gap)));
+  padding: 10px 14px;
+}
+.ui-tracker__title {
+  font-weight: 700;
+  color: var(--ui-accent);
+}
+.ui-tracker__objective {
+  font-size: 14px;
+  color: var(--ui-muted);
+}
+.ui-tracker__objective::before {
+  content: '▸ ';
+}
+
+.ui-toasts {
+  position: absolute;
+  top: calc(var(--ui-safe-top) + 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(420px, calc(100vw - 2 * var(--ui-gap)));
+}
+.ui-toast {
+  padding: 8px 16px;
+  text-align: center;
+  animation: ui-toast 3.5s ease forwards;
+}
+.ui-toast.is-questCompleted,
+.ui-toast.is-questStarted {
+  border-color: var(--ui-accent);
+  font-weight: 700;
+}
+.ui-toast.is-area {
+  font-style: italic;
+}
+@keyframes ui-toast {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  10%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.ui button {
+  pointer-events: auto;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.ui-action {
+  position: absolute;
+  right: var(--ui-safe-right);
+  bottom: var(--ui-safe-bottom);
+  min-height: 56px;
+  padding: 0 20px;
+  border: 2px solid var(--ui-accent);
+  border-radius: 28px;
+  background: var(--ui-bg);
+  font-weight: 700;
+}
+.ui-action:active {
+  background: rgba(242, 193, 78, 0.3);
+}
+
+.ui-dialogue {
+  position: absolute;
+  left: 50%;
+  bottom: var(--ui-safe-bottom);
+  transform: translateX(-50%);
+  width: min(720px, calc(100vw - 2 * var(--ui-gap)));
+  box-sizing: border-box;
+  padding: 14px 18px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.ui-dialogue__speaker {
+  font-weight: 700;
+  color: var(--ui-accent);
+}
+.ui-dialogue__text {
+  margin: 4px 0 8px;
+  font-size: 17px;
+}
+.ui-dialogue__more {
+  text-align: right;
+  font-size: 14px;
+  color: var(--ui-muted);
+}
+.ui-dialogue__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ui-choice {
+  min-height: 48px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  text-align: left;
+}
+.ui-choice:hover,
+.ui-choice:focus-visible {
+  border-color: var(--ui-accent);
+  background: rgba(242, 193, 78, 0.15);
+}

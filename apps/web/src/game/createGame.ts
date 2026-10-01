@@ -3,9 +3,9 @@ import { BootScene } from '../scenes/BootScene';
 import { UIScene } from '../scenes/UIScene';
 import { WorldScene } from '../scenes/WorldScene';
 import { keepCanvasSizedToParent } from './resize';
-import { createServices, installServices } from './services';
+import { installServices, type GameServices } from './services';
 
-export function createGame(parent: HTMLElement): Phaser.Game {
+export function createGame(parent: HTMLElement, services: GameServices): Phaser.Game {
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent,
@@ -22,11 +22,11 @@ export function createGame(parent: HTMLElement): Phaser.Game {
       arcade: { debug: false },
     },
     input: {
-      activePointers: 3, // joystick + two future action buttons
+      activePointers: 2, // joystick + one more finger; buttons are DOM elements
     },
     scene: [BootScene, WorldScene, UIScene],
   });
-  installServices(game, createServices());
+  installServices(game, services);
   game.events.once(Phaser.Core.Events.READY, () => {
     const stop = keepCanvasSizedToParent(game, parent);
     game.events.once(Phaser.Core.Events.DESTROY, stop);
