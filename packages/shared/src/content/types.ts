@@ -12,9 +12,28 @@ export type FlagValue = boolean | number | string;
 
 export type QuestStatus = 'active' | 'completed' | 'failed';
 
+/** Things an NPC can remember about the player. Extend as new kinds of interaction appear. */
+export type MemoryEvent =
+  'PLAYER_MET_NPC' | 'PLAYER_HELPED_NPC' | 'PLAYER_COMPLETED_QUEST' | 'PLAYER_FAILED_QUEST';
+
+export const MEMORY_EVENTS: readonly MemoryEvent[] = [
+  'PLAYER_MET_NPC',
+  'PLAYER_HELPED_NPC',
+  'PLAYER_COMPLETED_QUEST',
+  'PLAYER_FAILED_QUEST',
+];
+
 export type Condition =
-  /** True when the flag equals `equals` (default `true`). Unset flags never match. */
-  | { readonly type: 'flag'; readonly flag: string; readonly equals?: FlagValue }
+  /**
+   * Flag check. With `equals`: the flag equals it. With `atLeast`: the flag is a number >= it.
+   * With neither: the flag is `true`. Unset flags never match.
+   */
+  | {
+      readonly type: 'flag';
+      readonly flag: string;
+      readonly equals?: FlagValue;
+      readonly atLeast?: number;
+    }
   /** Quest status check; with `objective`, also requires that objective to be the current one. */
   | {
       readonly type: 'quest';
@@ -22,11 +41,23 @@ export type Condition =
       readonly status: QuestStatus | 'not_started';
       readonly objective?: string;
     }
+  /** The NPC remembers `event` (optionally about a specific quest). */
+  | {
+      readonly type: 'memory';
+      readonly npc: string;
+      readonly event: MemoryEvent;
+      readonly quest?: string;
+    }
   | { readonly type: 'not'; readonly condition: Condition };
 
 export type Effect =
   | { readonly type: 'setFlag'; readonly flag: string; readonly value?: FlagValue }
-  | { readonly type: 'startQuest'; readonly quest: string };
+  /** Adds `by` to a numeric flag (unset counts as 0). */
+  | { readonly type: 'adjustFlag'; readonly flag: string; readonly by: number }
+  /** Starts a quest; restarts it if it previously failed. */
+  | { readonly type: 'startQuest'; readonly quest: string }
+  | { readonly type: 'failQuest'; readonly quest: string }
+  | { readonly type: 'remember'; readonly npc: string; readonly event: MemoryEvent };
 
 // ---------------------------------------------------------------------------------------------
 // Dialogue: Dialogue → Node → Choice → Condition / Effect → next Node
@@ -96,9 +127,14 @@ export interface QuestDef {
 
 export type TimePeriod = 'morning' | 'afternoon' | 'evening' | 'night';
 
+/**
+ * Where an NPC stands. The first entry whose period matches and whose conditions hold wins,
+ * so world changes (e.g. a shop opening) can move people around.
+ */
 export interface ScheduleEntry {
   readonly period: TimePeriod | 'any';
   readonly position: TilePos;
+  readonly when?: readonly Condition[];
 }
 
 export interface NpcDialogueRef {
@@ -114,9 +150,9 @@ export interface NpcDef {
   readonly personality: readonly string[];
   /** Placeholder tint until real sprites exist, e.g. `#d9544f`. */
   readonly color: string;
-  /** Default tile position. */
+  /** Default tile position (used when no schedule entry applies). */
   readonly position: TilePos;
-  /** Where the NPC is during each part of the day (used once the game clock exists). */
+  /** Where the NPC is, by time of day and world state. */
   readonly schedule: readonly ScheduleEntry[];
   readonly dialogues: readonly NpcDialogueRef[];
   /** Other NPC id → relationship, e.g. `friend`, `family`, `rival`. */
@@ -155,9 +191,30 @@ export interface MapDef {
   readonly locations: readonly LocationDef[];
 }
 
+// ---------------------------------------------------------------------------------------------
+// World objects: signs, doors, notice boards — things you can inspect but that are not people.
+// ---------------------------------------------------------------------------------------------
+
+export interface AppearanceRef {
+  /** Texture key provided by the client's art (placeholder or real). */
+  readonly texture: string;
+  readonly when?: readonly Condition[];
+}
+
+export interface WorldObjectDef {
+  readonly id: string;
+  readonly name: string;
+  readonly position: TilePos;
+  /** First matching entry is shown, so world state can change how the object looks. */
+  readonly appearances: readonly AppearanceRef[];
+  /** First matching dialogue is used when the player inspects the object. */
+  readonly dialogues: readonly NpcDialogueRef[];
+}
+
 export interface GameContent {
   readonly map: MapDef;
   readonly npcs: readonly NpcDef[];
+  readonly objects: readonly WorldObjectDef[];
   readonly dialogues: Readonly<Record<string, DialogueDef>>;
   readonly quests: Readonly<Record<string, QuestDef>>;
 }

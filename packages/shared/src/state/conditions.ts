@@ -1,5 +1,6 @@
 import type { Condition, GameContent } from '../content/types';
 import type { GameState } from './gameState';
+import { hasMemory } from './memory';
 
 export function evaluateCondition(
   condition: Condition,
@@ -9,7 +10,11 @@ export function evaluateCondition(
   switch (condition.type) {
     case 'flag': {
       const value = state.flags[condition.flag];
-      return value !== undefined && value === (condition.equals ?? true);
+      if (value === undefined) return false;
+      if (condition.atLeast !== undefined) {
+        return typeof value === 'number' && value >= condition.atLeast;
+      }
+      return value === (condition.equals ?? true);
     }
     case 'quest': {
       const progress = state.quests[condition.quest];
@@ -19,6 +24,8 @@ export function evaluateCondition(
       const current = content.quests[condition.quest]?.objectives[progress.objectiveIndex];
       return current?.id === condition.objective;
     }
+    case 'memory':
+      return hasMemory(state, condition.npc, condition.event, condition.quest);
     case 'not':
       return !evaluateCondition(condition.condition, state, content);
   }

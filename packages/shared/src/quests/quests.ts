@@ -1,6 +1,7 @@
 import type { Effect, GameContent, ObjectiveDef } from '../content/types';
 import type { GameState, QuestProgress } from '../state/gameState';
 import { setFlag } from '../state/gameState';
+import { remember } from '../state/memory';
 
 /** Something that happened in the world which quest objectives may be waiting for. */
 export type QuestEvent =
@@ -11,7 +12,8 @@ export type QuestEvent =
 export type QuestNotice =
   | { readonly type: 'questStarted'; readonly quest: string }
   | { readonly type: 'objectiveCompleted'; readonly quest: string; readonly objective: string }
-  | { readonly type: 'questCompleted'; readonly quest: string };
+  | { readonly type: 'questCompleted'; readonly quest: string }
+  | { readonly type: 'questFailed'; readonly quest: string };
 
 export interface Outcome {
   readonly state: GameState;
@@ -32,12 +34,29 @@ export function activeQuestIds(state: GameState): string[] {
   return Object.keys(state.quests).filter((id) => state.quests[id]?.status === 'active');
 }
 
-/** Starts a quest. Quests that were already started (in any status) are left untouched. */
+/**
+ * Starts a quest. Active and completed quests are left untouched; a failed quest starts over,
+ * so players can change their mind (the quest giver still remembers the failure).
+ */
 export function startQuest(state: GameState, content: GameContent, questId: string): Outcome {
   if (!content.quests[questId]) throw new Error(`Unknown quest: ${questId}`);
-  if (state.quests[questId]) return { state, notices: [] };
+  const status = state.quests[questId]?.status;
+  if (status === 'active' || status === 'completed') return { state, notices: [] };
   const next = withProgress(state, questId, { status: 'active', objectiveIndex: 0 });
   return { state: next, notices: [{ type: 'questStarted', quest: questId }] };
+}
+
+/** Fails an active quest; anything else is left untouched. */
+export function failQuest(state: GameState, content: GameContent, questId: string): Outcome {
+  const quest = content.quests[questId];
+  if (!quest) throw new Error(`Unknown quest: ${questId}`);
+  const progress = state.quests[questId];
+  if (progress?.status !== 'active') return { state, notices: [] };
+  let next = withProgress(state, questId, { ...progress, status: 'failed' });
+  if (quest.giver) {
+    next = remember(next, quest.giver, { event: 'PLAYER_FAILED_QUEST', quest: questId });
+  }
+  return { state: next, notices: [{ type: 'questFailed', quest: questId }] };
 }
 
 /** Advances every active quest whose current objective is satisfied by `event`. */
@@ -67,8 +86,20 @@ export function applyEffects(
       case 'setFlag':
         result = { ...result, state: setFlag(result.state, effect.flag, effect.value ?? true) };
         break;
+      case 'adjustFlag': {
+        const current = result.state.flags[effect.flag];
+        const base = typeof current === 'number' ? current : 0;
+        result = { ...result, state: setFlag(result.state, effect.flag, base + effect.by) };
+        break;
+      }
       case 'startQuest':
         result = merge(result, startQuest(result.state, content, effect.quest));
+        break;
+      case 'failQuest':
+        result = merge(result, failQuest(result.state, content, effect.quest));
+        break;
+      case 'remember':
+        result = { ...result, state: remember(result.state, effect.npc, { event: effect.event }) };
         break;
     }
   }
@@ -97,8 +128,15 @@ function completeObjective(state: GameState, content: GameContent, questId: stri
     return { state: withProgress(state, questId, { status: 'active', objectiveIndex }), notices };
   }
 
+  let completed = withProgress(state, questId, { status: 'completed', objectiveIndex });
+  if (quest.giver) {
+    completed = remember(completed, quest.giver, {
+      event: 'PLAYER_COMPLETED_QUEST',
+      quest: questId,
+    });
+  }
   let result: Outcome = {
-    state: withProgress(state, questId, { status: 'completed', objectiveIndex }),
+    state: completed,
     notices: [...notices, { type: 'questCompleted', quest: questId }],
   };
   result = merge(result, applyEffects(result.state, content, quest.rewards));

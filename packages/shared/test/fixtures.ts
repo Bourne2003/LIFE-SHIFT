@@ -34,7 +34,25 @@ export const content: GameContent = {
         { dialogue: 'giver_offer' },
       ],
     }),
-    npc('friend'),
+    npc('friend', {
+      position: { x: 0, y: 0 },
+      schedule: [
+        { period: 'night', position: { x: 3, y: 0 } },
+        { period: 'any', position: { x: 2, y: 0 }, when: [{ type: 'flag', flag: 'moved' }] },
+      ],
+    }),
+  ],
+  objects: [
+    {
+      id: 'sign',
+      name: 'Sign',
+      position: { x: 3, y: 1 },
+      appearances: [
+        { texture: 'sign_open', when: [{ type: 'flag', flag: 'open' }] },
+        { texture: 'sign_closed' },
+      ],
+      dialogues: [],
+    },
   ],
   dialogues: {
     giver_offer: {
@@ -59,6 +77,7 @@ export const content: GameContent = {
     q1: {
       id: 'q1',
       title: 'First',
+      giver: 'giver',
       description: 'Talk then walk.',
       objectives: [
         { id: 'talk_friend', description: 'Talk to friend', type: 'talk', npc: 'friend' },
