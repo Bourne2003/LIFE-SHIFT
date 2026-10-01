@@ -48,6 +48,10 @@ export type Condition =
       readonly event: MemoryEvent;
       readonly quest?: string;
     }
+  /** The player carries at least `quantity` (default 1) of an item. */
+  | { readonly type: 'hasItem'; readonly item: string; readonly quantity?: number }
+  /** The player has at least this much money. */
+  | { readonly type: 'money'; readonly atLeast: number }
   | { readonly type: 'not'; readonly condition: Condition };
 
 export type Effect =
@@ -57,7 +61,15 @@ export type Effect =
   /** Starts a quest; restarts it if it previously failed. */
   | { readonly type: 'startQuest'; readonly quest: string }
   | { readonly type: 'failQuest'; readonly quest: string }
-  | { readonly type: 'remember'; readonly npc: string; readonly event: MemoryEvent };
+  | { readonly type: 'remember'; readonly npc: string; readonly event: MemoryEvent }
+  /** Adds items to the bag (quantity defaults to 1). */
+  | { readonly type: 'giveItem'; readonly item: string; readonly quantity?: number }
+  /** Removes up to `quantity` (default 1) of an item. */
+  | { readonly type: 'takeItem'; readonly item: string; readonly quantity?: number }
+  /** Adds (or with a negative amount, removes) money; never goes below 0. */
+  | { readonly type: 'adjustMoney'; readonly amount: number }
+  /** Presentation only: asks the client to open a shop. Does not change game state. */
+  | { readonly type: 'openShop'; readonly shop: string };
 
 // ---------------------------------------------------------------------------------------------
 // Dialogue: Dialogue → Node → Choice → Condition / Effect → next Node
@@ -105,6 +117,15 @@ export type ObjectiveDef =
       readonly description: string;
       readonly type: 'reach';
       readonly location: string;
+    }
+  /** Talk to `npc` while carrying the items; they are handed over when it completes. */
+  | {
+      readonly id: string;
+      readonly description: string;
+      readonly type: 'deliver';
+      readonly npc: string;
+      readonly item: string;
+      readonly quantity?: number;
     };
 
 export interface QuestDef {
@@ -211,10 +232,61 @@ export interface WorldObjectDef {
   readonly dialogues: readonly NpcDialogueRef[];
 }
 
+// ---------------------------------------------------------------------------------------------
+// Items and economy
+// ---------------------------------------------------------------------------------------------
+
+export type ItemCategory = 'food' | 'ingredient' | 'quest' | 'misc';
+
+export const ITEM_CATEGORIES: readonly ItemCategory[] = ['food', 'ingredient', 'quest', 'misc'];
+
+export interface ItemDef {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly category: ItemCategory;
+  /** How many fit in one bag slot. */
+  readonly maxStack: number;
+  /** Base price in whole currency units; shops may override when selling. */
+  readonly price: number;
+  /** Whether shops will buy it from the player (quest items: no). */
+  readonly sellable: boolean;
+}
+
+export interface ItemStack {
+  readonly item: string;
+  readonly quantity: number;
+}
+
+export interface ShopDef {
+  readonly id: string;
+  readonly name: string;
+  /** NPC who runs it (their dialogue offers the shop). */
+  readonly owner: string;
+  /** Items for sale; `price` overrides the item's base price. */
+  readonly stock: readonly { readonly item: string; readonly price?: number }[];
+  /** Categories this shop buys from the player. */
+  readonly buys: readonly ItemCategory[];
+  /** Fraction of the base price paid when buying from the player (0–1). */
+  readonly buybackRate: number;
+  /** Only trades while every condition holds. */
+  readonly when?: readonly Condition[];
+}
+
+export interface EconomyDef {
+  /** Shown before amounts, e.g. `฿`. */
+  readonly currencySymbol: string;
+  readonly startingMoney: number;
+  readonly startingItems: readonly ItemStack[];
+}
+
 export interface GameContent {
   readonly map: MapDef;
   readonly npcs: readonly NpcDef[];
   readonly objects: readonly WorldObjectDef[];
   readonly dialogues: Readonly<Record<string, DialogueDef>>;
   readonly quests: Readonly<Record<string, QuestDef>>;
+  readonly items: Readonly<Record<string, ItemDef>>;
+  readonly shops: Readonly<Record<string, ShopDef>>;
+  readonly economy: EconomyDef;
 }

@@ -1,6 +1,7 @@
 import type { Condition, GameContent } from '../content/types';
 import type { GameState } from './gameState';
 import { hasMemory } from './memory';
+import { countItem } from '../inventory/inventory';
 
 export function evaluateCondition(
   condition: Condition,
@@ -26,6 +27,10 @@ export function evaluateCondition(
     }
     case 'memory':
       return hasMemory(state, condition.npc, condition.event, condition.quest);
+    case 'hasItem':
+      return countItem(state, condition.item) >= (condition.quantity ?? 1);
+    case 'money':
+      return state.money >= condition.atLeast;
     case 'not':
       return !evaluateCondition(condition.condition, state, content);
   }

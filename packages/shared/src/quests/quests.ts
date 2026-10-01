@@ -2,23 +2,13 @@ import type { Effect, GameContent, ObjectiveDef } from '../content/types';
 import type { GameState, QuestProgress } from '../state/gameState';
 import { setFlag } from '../state/gameState';
 import { remember } from '../state/memory';
+import { addItem, countItem, removeItem } from '../inventory/inventory';
+import { mergeOutcomes as merge, type GameNotice, type Outcome } from '../state/notices';
 
 /** Something that happened in the world which quest objectives may be waiting for. */
 export type QuestEvent =
   | { readonly type: 'talk'; readonly npc: string }
   | { readonly type: 'reach'; readonly location: string };
-
-/** Player-facing news produced by a state change (shown as toasts, logged, sent to clients). */
-export type QuestNotice =
-  | { readonly type: 'questStarted'; readonly quest: string }
-  | { readonly type: 'objectiveCompleted'; readonly quest: string; readonly objective: string }
-  | { readonly type: 'questCompleted'; readonly quest: string }
-  | { readonly type: 'questFailed'; readonly quest: string };
-
-export interface Outcome {
-  readonly state: GameState;
-  readonly notices: readonly QuestNotice[];
-}
 
 export function currentObjective(
   state: GameState,
@@ -68,7 +58,7 @@ export function handleQuestEvent(
   let result: Outcome = { state, notices: [] };
   for (const questId of activeQuestIds(state)) {
     const objective = currentObjective(result.state, content, questId);
-    if (objective && objectiveMatches(objective, event)) {
+    if (objective && objectiveMatches(objective, event, result.state)) {
       result = merge(result, completeObjective(result.state, content, questId));
     }
   }
@@ -101,15 +91,54 @@ export function applyEffects(
       case 'remember':
         result = { ...result, state: remember(result.state, effect.npc, { event: effect.event }) };
         break;
+      case 'giveItem': {
+        const quantity = effect.quantity ?? 1;
+        const add = addItem(result.state, content, effect.item, quantity);
+        const notices: GameNotice[] = [];
+        if (add.added > 0)
+          notices.push({ type: 'itemsReceived', item: effect.item, quantity: add.added });
+        if (add.leftover > 0)
+          notices.push({ type: 'bagFull', item: effect.item, quantity: add.leftover });
+        result = merge(result, { state: add.state, notices });
+        break;
+      }
+      case 'takeItem': {
+        const take = removeItem(result.state, effect.item, effect.quantity ?? 1);
+        const notices: GameNotice[] =
+          take.removed > 0
+            ? [{ type: 'itemsRemoved', item: effect.item, quantity: take.removed }]
+            : [];
+        result = merge(result, { state: take.state, notices });
+        break;
+      }
+      case 'adjustMoney': {
+        const money = Math.max(0, result.state.money + Math.trunc(effect.amount));
+        const amount = money - result.state.money;
+        if (amount !== 0) {
+          result = merge(result, {
+            state: { ...result.state, money },
+            notices: [{ type: 'moneyChanged', amount }],
+          });
+        }
+        break;
+      }
+      case 'openShop':
+        break; // presentation only: the client opens its shop UI
     }
   }
   return result;
 }
 
-function objectiveMatches(objective: ObjectiveDef, event: QuestEvent): boolean {
+function objectiveMatches(objective: ObjectiveDef, event: QuestEvent, state: GameState): boolean {
   switch (objective.type) {
     case 'talk':
       return event.type === 'talk' && event.npc === objective.npc;
+    case 'deliver':
+      return (
+        event.type === 'talk' &&
+        event.npc === objective.npc &&
+        countItem(state, objective.item) >= (objective.quantity ?? 1)
+      );
     case 'reach':
       return event.type === 'reach' && event.location === objective.location;
   }
@@ -120,9 +149,13 @@ function completeObjective(state: GameState, content: GameContent, questId: stri
   const progress = state.quests[questId]!;
   const objective = quest.objectives[progress.objectiveIndex]!;
   const objectiveIndex = progress.objectiveIndex + 1;
-  const notices: QuestNotice[] = [
-    { type: 'objectiveCompleted', quest: questId, objective: objective.id },
-  ];
+  const notices: GameNotice[] = [];
+  if (objective.type === 'deliver') {
+    const taken = removeItem(state, objective.item, objective.quantity ?? 1);
+    state = taken.state;
+    notices.push({ type: 'itemsRemoved', item: objective.item, quantity: taken.removed });
+  }
+  notices.push({ type: 'objectiveCompleted', quest: questId, objective: objective.id });
 
   if (objectiveIndex < quest.objectives.length) {
     return { state: withProgress(state, questId, { status: 'active', objectiveIndex }), notices };
@@ -146,8 +179,4 @@ function completeObjective(state: GameState, content: GameContent, questId: stri
 
 function withProgress(state: GameState, questId: string, progress: QuestProgress): GameState {
   return { ...state, quests: { ...state.quests, [questId]: progress } };
-}
-
-function merge(previous: Outcome, next: Outcome): Outcome {
-  return { state: next.state, notices: [...previous.notices, ...next.notices] };
 }

@@ -1,5 +1,6 @@
 import type { GameContent } from '../content/types';
-import { handleQuestEvent, type Outcome, type QuestEvent } from '../quests/quests';
+import { handleQuestEvent, type QuestEvent } from '../quests/quests';
+import type { Outcome } from './notices';
 import type { GameState } from './gameState';
 import { remember } from './memory';
 

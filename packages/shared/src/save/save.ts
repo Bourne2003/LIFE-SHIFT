@@ -2,15 +2,17 @@ import {
   MEMORY_EVENTS,
   type FlagValue,
   type GameContent,
+  type ItemStack,
   type MemoryEvent,
   type QuestStatus,
   type TilePos,
 } from '../content/types';
 import type { GameState, NpcMemory, QuestProgress } from '../state/gameState';
+import { INVENTORY_SLOTS } from '../inventory/inventory';
 import { isSolid, parseMap } from '../world/map';
 
 /** Bump when the save shape changes, and add a migration from the previous version. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 /** Everything needed to resume a single-player game — and nothing derivable from content. */
 export interface SaveData {
@@ -24,10 +26,24 @@ export interface SaveData {
 type RawSave = Record<string, unknown>;
 
 /** `migrations[n]` upgrades a version-n save to version n+1. */
-export type SaveMigrations = Readonly<Record<number, (save: RawSave) => RawSave>>;
+export type SaveMigrations = Readonly<
+  Record<number, (save: RawSave, content: GameContent) => RawSave>
+>;
 
-/** No migrations yet: version 1 is the first shipped format. */
-export const SAVE_MIGRATIONS: SaveMigrations = {};
+export const SAVE_MIGRATIONS: SaveMigrations = {
+  /** v2 added money and the bag: players with older saves get the starting money and items. */
+  1: (save, content) => {
+    const state = isRecord(save.state) ? save.state : {};
+    return {
+      ...save,
+      state: {
+        ...state,
+        money: content.economy.startingMoney,
+        inventory: content.economy.startingItems,
+      },
+    };
+  },
+};
 
 export type LoadResult =
   | { readonly ok: true; readonly save: SaveData; readonly warnings: readonly string[] }
@@ -71,7 +87,7 @@ export function loadSave(
   while (version < currentVersion) {
     const migrate = migrations[version];
     if (!migrate) return { ok: false, error: `No migration from save version ${version}` };
-    save = { ...migrate(save), saveVersion: version + 1 };
+    save = { ...migrate(save, content), saveVersion: version + 1 };
     version += 1;
   }
 
@@ -144,7 +160,30 @@ function sanitizeState(raw: unknown, content: GameContent, warnings: string[]): 
     });
   }
 
-  return { flags, quests, memories };
+  let money = input.money;
+  if (!Number.isInteger(money) || (money as number) < 0) {
+    warnings.push('money invalid; set to 0');
+    money = 0;
+  }
+
+  const inventory: ItemStack[] = [];
+  for (const slot of Array.isArray(input.inventory) ? input.inventory : []) {
+    const item =
+      isRecord(slot) && typeof slot.item === 'string' ? content.items[slot.item] : undefined;
+    const quantity = isRecord(slot) ? slot.quantity : undefined;
+    if (!item || !Number.isInteger(quantity) || (quantity as number) < 1) {
+      warnings.push('bag: invalid or unknown item dropped');
+      continue;
+    }
+    const counted = inventory.filter((s) => content.items[s.item]?.category !== 'quest').length;
+    if (item.category !== 'quest' && counted >= INVENTORY_SLOTS) {
+      warnings.push(`bag: over ${INVENTORY_SLOTS} slots, ${item.id} dropped`);
+      continue;
+    }
+    inventory.push({ item: item.id, quantity: Math.min(quantity as number, item.maxStack) });
+  }
+
+  return { flags, quests, memories, money: money as number, inventory };
 }
 
 function sanitizeTile(raw: unknown, content: GameContent, warnings: string[]): TilePos {
