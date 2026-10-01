@@ -126,3 +126,35 @@ export function makeCharacter(scene: Phaser.Scene, key: string, bodyColor: numbe
   g.generateTexture(key, w, h);
   g.destroy();
 }
+
+type ObjectPainter = (g: G) => { width: number; height: number };
+
+function signBoard(
+  g: G,
+  board: number,
+  text: number,
+  lit: boolean,
+): { width: number; height: number } {
+  g.fillStyle(0x000000, 0.25).fillEllipse(16, 29, 20, 5);
+  g.fillStyle(0x6b4a2b).fillRect(14, 16, 4, 14);
+  g.fillStyle(0x4a2f1f).fillRect(3, 3, 26, 15);
+  g.fillStyle(board).fillRect(5, 5, 22, 11);
+  g.fillStyle(text).fillRect(8, 8, 16, 2).fillRect(8, 12, 10, 2);
+  if (lit) g.fillStyle(0xffe27a).fillCircle(27, 3, 3).fillCircle(5, 3, 3);
+  return { width: 32, height: 32 };
+}
+
+/** Placeholder art for world objects, keyed by the texture names used in objects.json. */
+const OBJECT_PAINTERS: Readonly<Record<string, ObjectPainter>> = {
+  sign_closed: (g) => signBoard(g, 0x7a3b33, 0xd9c7b8, false),
+  sign_open: (g) => signBoard(g, 0x3f8f4f, 0xfff4c2, true),
+};
+
+export function makeObjectTexture(scene: Phaser.Scene, key: string): void {
+  const paint = OBJECT_PAINTERS[key];
+  if (!paint) throw new Error(`No placeholder art for object texture '${key}'`);
+  const g = scene.make.graphics({}, false);
+  const { width, height } = paint(g);
+  g.generateTexture(key, width, height);
+  g.destroy();
+}

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { makeCharacter, makeTileset } from '../art/placeholderArt';
+import { makeCharacter, makeObjectTexture, makeTileset } from '../art/placeholderArt';
 import { TextureKeys } from '../game/assets';
 import { SceneKeys } from '../game/sceneKeys';
 import { getServices } from '../game/services';
@@ -16,7 +16,12 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     makeTileset(this, TextureKeys.Tiles);
     makeCharacter(this, TextureKeys.Player, 0x2f6fdd);
-    for (const npc of getServices(this).content.npcs) {
+    const { content } = getServices(this);
+    const objectTextures = new Set(
+      content.objects.flatMap((o) => o.appearances.map((a) => a.texture)),
+    );
+    objectTextures.forEach((key) => makeObjectTexture(this, key));
+    for (const npc of content.npcs) {
       makeCharacter(
         this,
         TextureKeys.npc(npc.id),

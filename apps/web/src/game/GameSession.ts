@@ -1,12 +1,12 @@
 import {
   applyEffects,
   createInitialState,
-  handleQuestEvent,
+  handleGameEvent,
   type Effect,
   type GameContent,
+  type GameEvent,
   type GameState,
   type Outcome,
-  type QuestEvent,
   type QuestNotice,
 } from '@life-shift/shared';
 import { Emitter } from './events';
@@ -20,7 +20,7 @@ export interface SessionEvents {
 
 /**
  * Owns the local player's GameState and is the only place it changes. Gameplay asks for
- * changes (effects, quest events) instead of editing state, which is the same shape a future
+ * changes (effects, player events) instead of editing state, which is the same shape a future
  * server-authoritative session will have: request in, validated state + notices out.
  */
 export class GameSession extends Emitter<SessionEvents> {
@@ -42,8 +42,15 @@ export class GameSession extends Emitter<SessionEvents> {
     this.commit(applyEffects(this._state, this.content, effects));
   }
 
-  questEvent(event: QuestEvent): void {
-    this.commit(handleQuestEvent(this._state, this.content, event));
+  /** Reports something the player did (talked to someone, reached a place). */
+  handleEvent(event: GameEvent): void {
+    this.commit(handleGameEvent(this._state, this.content, event));
+  }
+
+  /** Swaps in a whole new state (load game, new game). Emits `state` but no notices. */
+  replaceState(state: GameState): void {
+    this._state = state;
+    this.emit('state', this._state);
   }
 
   private commit(outcome: Outcome): void {

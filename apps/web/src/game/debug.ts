@@ -24,7 +24,12 @@ export interface DebugApi {
   dialogue(): DialogueView | null;
   /** Id of the NPC the player would talk to right now. */
   target(): string | null;
+  /** Default tile of an NPC in the content. */
   npcTile(id: string): TilePos;
+  /** Tile an NPC is standing on right now (after schedule changes). */
+  npcCurrentTile(id: string): TilePos;
+  /** Texture an object currently shows. */
+  objectTexture(id: string): string;
   teleport(tile: TilePos): void;
 }
 
@@ -66,11 +71,21 @@ export function installDebugApi(game: Phaser.Game, services: GameServices): void
     },
     state: () => services.session.state,
     dialogue: () => services.dialogue.view(),
-    target: () => world().interactTarget?.id ?? null,
+    target: () => world().interactTarget ?? null,
     npcTile: (id) => {
       const npc = services.content.npcs.find((n) => n.id === id);
       if (!npc) throw new Error(`Unknown npc ${id}`);
       return npc.position;
+    },
+    npcCurrentTile: (id) => {
+      const npc = world().npcs.find((n) => n.id === id);
+      if (!npc) throw new Error(`Unknown npc ${id}`);
+      return npc.tile;
+    },
+    objectTexture: (id) => {
+      const object = world().objects.find((o) => o.id === id);
+      if (!object) throw new Error(`Unknown object ${id}`);
+      return object.sprite.texture.key;
     },
     teleport: (tile) => world().teleport(tile),
   };

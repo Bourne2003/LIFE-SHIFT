@@ -2,6 +2,7 @@ import { activeQuestIds, currentObjective, type QuestNotice } from '@life-shift/
 import type { GameServices } from '../game/services';
 import type { DialogueView } from '../game/DialogueController';
 import { el } from './dom';
+import { mountMenu } from './menu';
 import './ui.css';
 
 /**
@@ -72,10 +73,12 @@ export function mountUi(root: HTMLElement, services: GameServices): () => void {
     e.preventDefault();
     input.press('interact');
   });
-  let target: { name: string } | null = null;
+  let target: { name: string; kind: 'npc' | 'object' } | null = null;
   const renderAction = () => {
-    actionLabel.textContent = target ? `Talk to ${target.name}` : '';
-    action.classList.toggle('is-hidden', !target || dialogue.active);
+    actionLabel.textContent = target
+      ? `${target.kind === 'npc' ? 'Talk to' : 'Look at'} ${target.name}`
+      : '';
+    action.classList.toggle('is-hidden', !target || dialogue.active || services.ui.menuOpen);
   };
   cleanups.push(
     world.on('interactTarget', (t) => {
@@ -133,7 +136,11 @@ export function mountUi(root: HTMLElement, services: GameServices): () => void {
   window.addEventListener('keydown', onKey);
   cleanups.push(() => window.removeEventListener('keydown', onKey));
 
-  root.replaceChildren(hint, tracker, toasts, action, box);
+  // --- Menu (save / load / new game) -------------------------------------------------------
+  const menu = mountMenu(services, toast, () => renderAction());
+  cleanups.push(menu.destroy);
+
+  root.replaceChildren(hint, tracker, toasts, action, box, ...menu.elements);
   return () => {
     cleanups.forEach((c) => c());
     root.replaceChildren();
@@ -149,5 +156,7 @@ function noticeText(notice: QuestNotice, { content }: GameServices): string {
       return `✓ ${quest?.objectives.find((o) => o.id === notice.objective)?.description}`;
     case 'questCompleted':
       return `Quest complete: ${quest?.title}`;
+    case 'questFailed':
+      return `Quest failed: ${quest?.title}`;
   }
 }
