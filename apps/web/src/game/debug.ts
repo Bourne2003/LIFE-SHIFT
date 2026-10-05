@@ -14,6 +14,7 @@ export interface DebugApi {
     body: { left: number; top: number; right: number; bottom: number };
   };
   world(): { width: number; height: number };
+  quest(): { state: string };
   camera(): { scrollX: number; scrollY: number; zoom: number; width: number; height: number };
 }
 
@@ -42,6 +43,7 @@ export function installDebugApi(game: Phaser.Game): void {
       const { width, height } = world().physics.world.bounds;
       return { width, height };
     },
+    quest: () => ({ state: world().questState }),
     camera: () => {
       const c = world().cameras.main;
       return {

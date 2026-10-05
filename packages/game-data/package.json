@@ -1,0 +1,13 @@
+{
+  "name": "@life-shift/game-data",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Localized, engine-agnostic LIFE SHIFT content data.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

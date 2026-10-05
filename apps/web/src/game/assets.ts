@@ -7,4 +7,6 @@ export const TextureKeys = {
   Player: 'player',
   Ground: 'ground',
   Road: 'road',
+  Landmark: 'landmark',
+  Npc: 'npc',
 } as const;

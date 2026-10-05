@@ -1,12 +1,18 @@
 import { defineConfig, devices } from '@playwright/test';
 import { DEV_URL, PREVIEW_URL } from './e2e/urls';
 
+const browserChannel = process.env.PLAYWRIGHT_CHANNEL;
+
 export default defineConfig({
   testDir: './e2e',
   timeout: 30_000,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',
-  use: { baseURL: DEV_URL, trace: 'retain-on-failure' },
+  use: {
+    baseURL: DEV_URL,
+    trace: 'retain-on-failure',
+    ...(browserChannel ? { channel: browserChannel } : {}),
+  },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     { name: 'mobile', use: { ...devices['Pixel 7'] } },

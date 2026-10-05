@@ -25,3 +25,56 @@ body {
 #game canvas {
   display: block;
 }
+
+#language-control {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  border: 1px solid #ffffff80;
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: #ffffff;
+  background: #00000080;
+  font:
+    600 14px system-ui,
+    'Noto Sans Thai',
+    'Leelawadee UI',
+    Tahoma,
+    sans-serif;
+  cursor: pointer;
+}
+
+#interact-control {
+  position: fixed;
+  right: 16px;
+  bottom: 24px;
+  z-index: 10;
+  border: 1px solid #ffffff80;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #ffffff;
+  background: #4a6fa5dd;
+  font:
+    600 16px system-ui,
+    'Noto Sans Thai',
+    'Leelawadee UI',
+    Tahoma,
+    sans-serif;
+  cursor: pointer;
+}
+
+#interact-control:focus-visible {
+  outline: 3px solid #8fd694;
+  outline-offset: 2px;
+}
+
+#language-control:focus-visible {
+  outline: 3px solid #8fd694;
+  outline-offset: 2px;
+}
+
+/* Thai glyphs are not consistently available in every system-ui implementation. */
+:lang(th) {
+  font-family: system-ui, 'Noto Sans Thai', 'Leelawadee UI', Tahoma, sans-serif;
+}

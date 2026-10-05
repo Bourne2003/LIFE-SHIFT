@@ -18,7 +18,7 @@ architecturally.
 ## Current goal: a small vertical slice
 
 One small city (central street, residential area, market, restaurant, park, shop, player home,
-a hidden location, one landmark), ~10 data-driven NPCs, ~5 quests (at least one changes world
+a hidden location, multiple landmarks), ~10 data-driven NPCs, ~5 quests (at least one changes world
 state), day/night, clear/rain weather, inventory, basic shop economy, versioned save/load,
 responsive UI, keyboard and touch controls, offline single-player.
 
@@ -33,13 +33,13 @@ developer experience, visual quality.
 
 ## Milestones
 
-| #   | Milestone              | Contents                                                                      | Status   |
-| --- | ---------------------- | ----------------------------------------------------------------------------- | -------- |
-| 1   | Browser Game Bootstrap | TS + Vite + Phaser, scene, player, movement, camera, responsive canvas, touch | **Done** |
-| 2   | Playable City          | Small map, collision, NPCs, interaction, dialogue, basic quest                | Next     |
-| 3   | World Memory           | World state, quest consequences, NPC memory, save/load                        |          |
-| 4   | LAN Multiplayer        | Local server, room, connection, sync, disconnect handling                     |          |
-| 5   | Online Ready           | Deploy config, env config, HTTPS, database design, monitoring                 |          |
+| #   | Milestone              | Contents                                                                                                   | Status      |
+| --- | ---------------------- | ---------------------------------------------------------------------------------------------------------- | ----------- |
+| 1   | Browser Game Bootstrap | TS + Vite + Phaser, scene, player, movement, camera, responsive canvas, touch                              | **Done**    |
+| 2   | Playable City          | Small map, collision, NPCs, interaction, dialogue, chained quests, visible world change, living atmosphere | In progress |
+| 3   | World Memory           | World state, quest consequences, NPC memory, save/load                                                     |             |
+| 4   | LAN Multiplayer        | Local server, room, connection, sync, disconnect handling                                                  |             |
+| 5   | Online Ready           | Deploy config, env config, HTTPS, database design, monitoring                                              |             |
 
 Multiplayer order: local single-player → local server → LAN → Internet → persistent accounts →
 persistent world. Multiplayer stays behind `VITE_MULTIPLAYER_ENABLED` until single-player is

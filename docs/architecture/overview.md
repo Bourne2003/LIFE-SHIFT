@@ -25,18 +25,22 @@ game/
   services.ts           GameServices container, stored in the game registry
   resize.ts             ResizeObserver workaround for a Phaser rotation bug
   viewport.ts           camera zoom for any screen size (pure, unit tested)
+  worldClock.ts         deterministic day-period and weather state (pure, unit tested)
   assets.ts             TextureKeys — the only way gameplay refers to art
   sceneKeys.ts
   debug.ts              window.__LIFE_SHIFT__ read-only snapshot for e2e tests (dev only)
 scenes/
   BootScene             prepares (currently generates) placeholder textures
-  WorldScene            world, physics bounds, player, camera follow + zoom
-  UIScene               screen-space overlay: touch joystick, hints; later HUD/dialogue/menus
+  WorldScene            world, data-driven city structures/collision, NPC/landmark interaction, quest progression and world-state changes, physics bounds, player, camera follow + zoom
+  UIScene               screen-space overlay: touch joystick, hints, objective and environment HUD
 entities/Player.ts      physics body at the feet; turns a MoveIntent into velocity/facing/state
+content                 localized city structures, NPCs, landmarks and chained quests from `packages/game-data`; the current slice contains ten NPCs and four landmarks
 input/
   InputSource.ts        interface: getMoveIntent()
+  ActionInputSource.ts  interface for one-shot interactions
   InputManager.ts       merges all sources into one intent
   KeyboardInputSource   WASD + arrows
+  KeyboardActionInputSource  E for nearby NPC interaction
   TouchJoystick         floating joystick on the left 60% of the screen (touch pointers only)
   joystickMath.ts       deadzone/ramp maths (pure, unit tested)
 ```
@@ -49,7 +53,8 @@ Joystick ─┼─► InputManager.getMoveIntent() ─► Player.applyIntent() �
 (gamepad) ┘        (combine + clamp)             (shared movement rules)
 ```
 
-Adding a device = implementing `InputSource` and registering it. Gameplay never changes.
+Adding a device = implementing `InputSource` or `ActionInputSource` and registering it. Gameplay
+never reads raw input devices.
 
 ### Scenes and scaling
 

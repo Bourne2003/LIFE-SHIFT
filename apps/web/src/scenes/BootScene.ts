@@ -16,9 +16,20 @@ export class BootScene extends Phaser.Scene {
     this.makePlayerTexture();
     this.makeTileTexture(TextureKeys.Ground, 0x5b8c5a, 0x527f51);
     this.makeTileTexture(TextureKeys.Road, 0x8a8577, 0x7d796c);
+    this.makeMarkerTexture(TextureKeys.Npc, 0xe58f65, 0xf6c48e);
+    this.makeMarkerTexture(TextureKeys.Landmark, 0x6f76d9, 0xb2b7ff);
 
     this.scene.start(SceneKeys.World);
     this.scene.launch(SceneKeys.UI);
+  }
+
+  private makeMarkerTexture(key: string, base: number, detail: number): void {
+    const g = this.make.graphics({}, false);
+    g.fillStyle(0x000000, 0.25).fillEllipse(16, 29, 24, 7);
+    g.fillStyle(base).fillCircle(16, 15, 12);
+    g.fillStyle(detail).fillCircle(12, 11, 4);
+    g.generateTexture(key, 32, 32);
+    g.destroy();
   }
 
   private makePlayerTexture(): void {

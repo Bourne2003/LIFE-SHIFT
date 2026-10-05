@@ -23,4 +23,19 @@ describe('InputManager', () => {
     remove();
     expect(input.getMoveIntent()).toEqual(IDLE_INTENT);
   });
+
+  it('consumes touch interaction requests exactly once', () => {
+    const input = new InputManager();
+    input.requestInteract();
+    expect(input.wasInteractPressed()).toBe(true);
+    expect(input.wasInteractPressed()).toBe(false);
+  });
+
+  it('combines queued and device interactions without repeating them', () => {
+    const input = new InputManager();
+    input.addActionSource({ wasInteractPressed: () => true });
+    input.requestInteract();
+    expect(input.wasInteractPressed()).toBe(true);
+    expect(input.wasInteractPressed()).toBe(true);
+  });
 });
