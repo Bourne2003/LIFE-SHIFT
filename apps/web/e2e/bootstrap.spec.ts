@@ -74,7 +74,7 @@ test('player cannot leave the world', async ({ page, isMobile }) => {
 test('player collides with world obstacles', async ({ page, isMobile }) => {
   test.skip(isMobile, 'uses keyboard to drive the player');
   await openGame(page);
-  const obstacleLeft = 22 * TILE_SIZE;
+  const obstacleLeft = 26 * TILE_SIZE;
 
   await page.keyboard.down('ArrowRight');
   let last = await playerPos(page);
