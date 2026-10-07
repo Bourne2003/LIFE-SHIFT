@@ -16,6 +16,7 @@ export class BootScene extends Phaser.Scene {
     this.makePlayerTexture();
     this.makeTileTexture(TextureKeys.Ground, 0x5b8c5a, 0x527f51);
     this.makeTileTexture(TextureKeys.Road, 0x8a8577, 0x7d796c);
+    this.makeTileTexture(TextureKeys.Building, 0x6a4d39, 0x5b422f);
 
     this.scene.start(SceneKeys.World);
     this.scene.launch(SceneKeys.UI);

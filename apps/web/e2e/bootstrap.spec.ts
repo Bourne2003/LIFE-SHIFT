@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { TILE_SIZE } from '@life-shift/shared';
 import { PREVIEW_URL } from './urls';
 import { cameraState, openGame, playerPos, trackErrors } from './helpers';
 
@@ -68,6 +69,29 @@ test('player cannot leave the world', async ({ page, isMobile }) => {
   const bottomRight = await holdUntilStopped(['d', 's']);
   expect(bottomRight.right).toBeCloseTo(world.width, 0);
   expect(bottomRight.bottom).toBeCloseTo(world.height, 0);
+});
+
+test('player collides with world obstacles', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'uses keyboard to drive the player');
+  await openGame(page);
+  const obstacleLeft = 22 * TILE_SIZE;
+
+  await page.keyboard.down('ArrowRight');
+  let last = await playerPos(page);
+  await expect
+    .poll(
+      async () => {
+        const now = await playerPos(page);
+        const still = now.x === last.x;
+        last = now;
+        return still;
+      },
+      { intervals: [250], timeout: 8_000 },
+    )
+    .toBe(true);
+  await page.keyboard.up('ArrowRight');
+
+  expect(last.body.right).toBeCloseTo(obstacleLeft, 0);
 });
 
 test('touch joystick drag moves the player', async ({ page, isMobile }) => {
