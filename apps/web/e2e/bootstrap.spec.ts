@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { TILE_SIZE } from '@life-shift/shared';
+import { TILE_SIZE, WORLD_NPC_SPAWNS } from '@life-shift/shared';
 import { PREVIEW_URL } from './urls';
-import { cameraState, openGame, playerPos, trackErrors } from './helpers';
+import { cameraState, npcState, openGame, playerPos, trackErrors } from './helpers';
 
 test('canvas fills the viewport and tracks resizes', async ({ page }) => {
   await openGame(page);
@@ -92,6 +92,26 @@ test('player collides with world obstacles', async ({ page, isMobile }) => {
   await page.keyboard.up('ArrowRight');
 
   expect(last.body.right).toBeCloseTo(obstacleLeft, 0);
+});
+
+test('world loads NPC spawn data', async ({ page }) => {
+  await openGame(page);
+  const npcs = await npcState(page);
+  expect(npcs).toHaveLength(WORLD_NPC_SPAWNS.length);
+
+  const expectedById = new Map(
+    WORLD_NPC_SPAWNS.map((npc) => [
+      npc.id,
+      { name: npc.name, x: (npc.xTiles + 0.5) * TILE_SIZE, y: (npc.yTiles + 1) * TILE_SIZE },
+    ]),
+  );
+  for (const npc of npcs) {
+    const expected = expectedById.get(npc.id);
+    expect(expected).toBeDefined();
+    expect(npc.name).toBe(expected!.name);
+    expect(npc.x).toBeCloseTo(expected!.x, 0);
+    expect(npc.y).toBeCloseTo(expected!.y, 0);
+  }
 });
 
 test('touch joystick drag moves the player', async ({ page, isMobile }) => {

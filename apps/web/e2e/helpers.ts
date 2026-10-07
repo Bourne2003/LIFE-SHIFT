@@ -23,3 +23,7 @@ export function playerPos(page: Page) {
 export function cameraState(page: Page) {
   return page.evaluate(() => window.__LIFE_SHIFT__!.camera());
 }
+
+export function npcState(page: Page) {
+  return page.evaluate(() => window.__LIFE_SHIFT__!.npcs());
+}

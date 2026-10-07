@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { TILE_SIZE, WORLD_OBSTACLES } from '@life-shift/shared';
+import { TILE_SIZE, WORLD_NPC_SPAWNS, WORLD_OBSTACLES } from '@life-shift/shared';
 import { Player } from '../entities/Player';
 import { TextureKeys } from '../game/assets';
 import { SceneKeys } from '../game/sceneKeys';
@@ -10,10 +10,15 @@ import { KeyboardInputSource } from '../input/KeyboardInputSource';
 export const WORLD_TILES_WIDE = 40;
 export const WORLD_TILES_HIGH = 30;
 
-/** The explorable world. Milestone 1: open ground, a road and a controllable player. */
+/** The explorable world with roads, static obstacles and placeholder NPCs. */
 export class WorldScene extends Phaser.Scene {
   private services!: GameServices;
   private _player!: Player;
+  private npcSprites: {
+    id: string;
+    name: string;
+    sprite: Phaser.GameObjects.Image;
+  }[] = [];
 
   constructor() {
     super(SceneKeys.World);
@@ -39,6 +44,13 @@ export class WorldScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, worldW, worldH);
     this._player = new Player(this, worldW / 2, worldH / 2);
+    this.npcSprites = WORLD_NPC_SPAWNS.map((spawn) => {
+      const sprite = this.add
+        .image((spawn.xTiles + 0.5) * TILE_SIZE, (spawn.yTiles + 1) * TILE_SIZE, TextureKeys.Npc)
+        .setOrigin(0.5, 1);
+      sprite.setDepth(sprite.y);
+      return { id: spawn.id, name: spawn.name, sprite };
+    });
     const obstacleBodies = this.physics.add.staticGroup();
     for (const obstacle of WORLD_OBSTACLES) {
       const x = obstacle.xTiles * TILE_SIZE;
@@ -71,6 +83,15 @@ export class WorldScene extends Phaser.Scene {
 
   override update(): void {
     this._player.applyIntent(this.services.input.getMoveIntent());
+  }
+
+  get npcs(): readonly { id: string; name: string; x: number; y: number }[] {
+    return this.npcSprites.map(({ id, name, sprite }) => ({
+      id,
+      name,
+      x: sprite.x,
+      y: sprite.y,
+    }));
   }
 
   private fitCamera(size: Phaser.Structs.Size): void {

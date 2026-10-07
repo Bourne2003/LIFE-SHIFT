@@ -5,6 +5,7 @@
  */
 export const TextureKeys = {
   Player: 'player',
+  Npc: 'npc',
   Ground: 'ground',
   Road: 'road',
   Building: 'building',
