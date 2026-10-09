@@ -15,6 +15,7 @@ export interface DebugApi {
   };
   world(): { width: number; height: number };
   camera(): { scrollX: number; scrollY: number; zoom: number; width: number; height: number };
+  npcs(): { id: string; name: string; x: number; y: number }[];
 }
 
 declare global {
@@ -52,5 +53,6 @@ export function installDebugApi(game: Phaser.Game): void {
         height: c.height,
       };
     },
+    npcs: () => world().npcs.slice(),
   };
 }
