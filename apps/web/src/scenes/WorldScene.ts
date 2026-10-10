@@ -16,6 +16,12 @@ import {
 } from '@life-shift/game-data';
 import { getInitialLocale, readStoredLocale } from '../i18n';
 import { environmentAt, type WorldEnvironment } from '../game/worldClock';
+import {
+  loadWorldMemory,
+  saveWorldMemory,
+  WORLD_MEMORY_VERSION,
+  type MemoryStorage,
+} from '../game/worldMemory';
 
 export const WORLD_TILES_WIDE = 40;
 export const WORLD_TILES_HIGH = 30;
@@ -30,6 +36,7 @@ export class WorldScene extends Phaser.Scene {
   private readonly discoveredLandmarks = new Set<string>();
   private onStoryUpdate?: (message: string, objective: string) => void;
   private elapsedMs = 0;
+  private memoryStorage: MemoryStorage | undefined;
 
   constructor() {
     super(SceneKeys.World);
@@ -55,6 +62,13 @@ export class WorldScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, worldW, worldH);
     this._player = new Player(this, worldW / 2, worldH / 2);
+    this.memoryStorage = this.getMemoryStorage();
+    const memory = loadWorldMemory(this.memoryStorage);
+    if (memory) {
+      this.objective = memory.questState;
+      for (const id of memory.discoveredLandmarks) this.discoveredLandmarks.add(id);
+      this._player.sprite.setPosition(memory.player.x, memory.player.y);
+    }
     this.createCityStructures();
     this.createCityContent();
 
@@ -75,7 +89,10 @@ export class WorldScene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, this.fitCamera, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.fitCamera, this);
+      window.removeEventListener('beforeunload', this.saveMemoryOnExit);
     });
+    this.saveMemory();
+    window.addEventListener('beforeunload', this.saveMemoryOnExit);
   }
 
   override update(): void {
@@ -159,6 +176,7 @@ export class WorldScene extends Phaser.Scene {
       sprite.setData('landmark', landmark);
       this.markers.push(sprite);
       this.landmarkSprites.set(landmark.id, sprite);
+      if (this.discoveredLandmarks.has(landmark.id)) sprite.setTint(0xffe082);
       this.add
         .text(landmark.x - 45, landmark.y - 48, textForLocale(landmark.name, locale), {
           fontFamily: 'system-ui, "Noto Sans Thai", sans-serif',
@@ -198,6 +216,7 @@ export class WorldScene extends Phaser.Scene {
         this.objective = 'find-park';
       }
     this.onStoryUpdate?.(textForLocale(npc.greeting, locale), this.objective);
+    this.saveMemory();
     return;
   }
 
@@ -220,6 +239,7 @@ export class WorldScene extends Phaser.Scene {
     );
     this.discoveredLandmarks.add(landmark.id);
     this.onStoryUpdate?.(textForLocale(landmark.description, locale), this.objective);
+    this.saveMemory();
   }
 
   private checkLandmarkDiscovery(): void {
@@ -244,6 +264,31 @@ export class WorldScene extends Phaser.Scene {
       this.objective = this.objective === 'find-landmark' ? 'complete' : 'complete-lanterns';
       this.landmarkSprites.get(landmark.id)?.setTint(0xffe082);
       this.onStoryUpdate?.(textForLocale(landmark.description, locale), this.objective);
+      this.saveMemory();
+    }
+  }
+
+  private readonly saveMemoryOnExit = (): void => {
+    this.saveMemory();
+  };
+
+  private saveMemory(): void {
+    saveWorldMemory(
+      {
+        version: WORLD_MEMORY_VERSION,
+        questState: this.objective,
+        discoveredLandmarks: [...this.discoveredLandmarks],
+        player: { x: this._player.sprite.x, y: this._player.sprite.y },
+      },
+      this.memoryStorage,
+    );
+  }
+
+  private getMemoryStorage(): MemoryStorage | undefined {
+    try {
+      return window.localStorage;
+    } catch {
+      return undefined;
     }
   }
 

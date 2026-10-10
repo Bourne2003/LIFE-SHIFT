@@ -35,6 +35,26 @@ test('language control persists the selected locale', async ({ page }) => {
   expect(await page.evaluate(() => localStorage.getItem('life-shift.locale'))).toBe('th');
 });
 
+test('world memory restores progress on reload', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'life-shift.world-memory',
+      JSON.stringify({
+        version: 1,
+        questState: 'complete',
+        discoveredLandmarks: ['old-fountain'],
+        player: { x: 720, y: 540 },
+      }),
+    );
+  });
+  await openGame(page);
+  await expect
+    .poll(async () => await page.evaluate(() => window.__LIFE_SHIFT__!.quest().state))
+    .toBe('complete');
+  await expect.poll(async () => (await playerPos(page)).x).toBeCloseTo(720, 0);
+  await expect.poll(async () => (await playerPos(page)).y).toBeCloseTo(540, 0);
+});
+
 test('interaction control is available on every device', async ({ page }) => {
   await openGame(page);
   const control = page.locator('#interact-control');

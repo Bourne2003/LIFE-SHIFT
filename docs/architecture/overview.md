@@ -26,12 +26,13 @@ game/
   resize.ts             ResizeObserver workaround for a Phaser rotation bug
   viewport.ts           camera zoom for any screen size (pure, unit tested)
   worldClock.ts         deterministic day-period and weather state (pure, unit tested)
+  worldMemory.ts         versioned local world save/load (pure validation, storage adapter)
   assets.ts             TextureKeys — the only way gameplay refers to art
   sceneKeys.ts
   debug.ts              window.__LIFE_SHIFT__ read-only snapshot for e2e tests (dev only)
 scenes/
   BootScene             prepares (currently generates) placeholder textures
-  WorldScene            world, data-driven city structures/collision, NPC/landmark interaction, quest progression and world-state changes, physics bounds, player, camera follow + zoom
+  WorldScene            world, data-driven city structures/collision, NPC/landmark interaction, quest progression, versioned save/load and world-state changes, physics bounds, player, camera follow + zoom
   UIScene               screen-space overlay: touch joystick, hints, objective and environment HUD
 entities/Player.ts      physics body at the feet; turns a MoveIntent into velocity/facing/state
 content                 localized city structures, NPCs, landmarks and chained quests from `packages/game-data`; the current slice contains ten NPCs and four landmarks
