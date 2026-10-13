@@ -1,8 +1,15 @@
 import type Phaser from 'phaser';
+import type { Locale, LocalizedText, QuestLog } from '@life-shift/shared';
 import { SceneKeys } from './sceneKeys';
+import { getServices } from './services';
+import type { ConversationView } from './session';
+import type { UIScene } from '../scenes/UIScene';
 import type { WorldScene } from '../scenes/WorldScene';
 
-/** Read-only snapshot for automated browser tests and console debugging. Dev builds only. */
+/**
+ * State snapshots (plus one test hook, teleport) for automated browser tests and console
+ * debugging. Installed in dev builds only; never part of the production bundle.
+ */
 export interface DebugApi {
   isReady(): boolean;
   player(): {
@@ -15,7 +22,18 @@ export interface DebugApi {
   };
   world(): { width: number; height: number };
   camera(): { scrollX: number; scrollY: number; zoom: number; width: number; height: number };
-  npcs(): { id: string; name: string; x: number; y: number }[];
+  npcs(): { id: string; name: LocalizedText; x: number; y: number }[];
+  /** Id of the NPC the player can talk to right now. */
+  nearbyNpc(): string | null;
+  dialogue(): ConversationView | null;
+  quests(): QuestLog;
+  /** Screen position of the touch interact button, if this device has one. */
+  interactButton(): { x: number; y: number; visible: boolean } | null;
+  locale(): Locale;
+  /** Screen position (centre) of the language switch button. */
+  languageButton(): { x: number; y: number };
+  /** Moves the player so its feet stand at (x, y) in world units. */
+  teleport(x: number, y: number): void;
 }
 
 declare global {
@@ -26,8 +44,14 @@ declare global {
 
 export function installDebugApi(game: Phaser.Game): void {
   const world = () => game.scene.getScene(SceneKeys.World) as WorldScene;
+  const ui = () => game.scene.getScene(SceneKeys.UI) as UIScene;
+  const session = () => getServices(world()).session;
   window.__LIFE_SHIFT__ = {
-    isReady: () => game.isBooted && game.scene.isActive(SceneKeys.World) && !!world().player,
+    isReady: () =>
+      game.isBooted &&
+      game.scene.isActive(SceneKeys.World) &&
+      game.scene.isActive(SceneKeys.UI) &&
+      !!world().player,
     player: () => {
       const p = world().player;
       const b = p.sprite.body;
@@ -54,5 +78,19 @@ export function installDebugApi(game: Phaser.Game): void {
       };
     },
     npcs: () => world().npcs.slice(),
+    nearbyNpc: () => session().nearbyNpc?.id ?? null,
+    dialogue: () => session().conversation,
+    quests: () => session().quests,
+    interactButton: () => {
+      const button = ui().interactButton;
+      return button ? { ...button.position, visible: button.visible } : null;
+    },
+    locale: () => getServices(world()).i18n.locale,
+    languageButton: () => ui().languageButtonCenter,
+    teleport: (x, y) => {
+      const { sprite } = world().player;
+      // The body's bottom edge is the sprite's bottom edge (see Player).
+      sprite.body.reset(x, y - sprite.displayHeight / 2);
+    },
   };
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { IDLE_INTENT, type MoveIntent } from '@life-shift/shared';
 import { InputManager } from './InputManager';
+import type { InputAction } from './InputSource';
 
 const fixed = (intent: MoveIntent) => ({ getMoveIntent: () => intent });
 
@@ -22,5 +23,18 @@ describe('InputManager', () => {
     const remove = input.add(fixed({ x: -1, y: 0 }));
     remove();
     expect(input.getMoveIntent()).toEqual(IDLE_INTENT);
+  });
+
+  it('merges actions from all sources and drains each source', () => {
+    const input = new InputManager();
+    const pending = (actions: InputAction[]) => ({
+      getMoveIntent: () => IDLE_INTENT,
+      consumeActions: () => actions.splice(0),
+    });
+    input.add(pending(['interact']));
+    input.add(pending(['interact', 'navDown']));
+    input.add(fixed(IDLE_INTENT)); // sources without actions are fine
+    expect([...input.consumeActions()].sort()).toEqual(['interact', 'navDown']);
+    expect(input.consumeActions().size).toBe(0);
   });
 });

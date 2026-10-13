@@ -1,14 +1,24 @@
-export interface WorldNpcSpawn {
-  readonly id: string;
-  readonly name: string;
-  readonly xTiles: number;
-  readonly yTiles: number;
+import { conditionHolds, type QuestCondition } from '../dialogue/dialogue';
+import type { LocalizedText } from '../i18n/locale';
+import type { QuestLog } from '../quests/quests';
+
+/** Which dialogue an NPC uses; the first option whose conditions all hold is chosen. */
+export interface NpcDialogueOption {
+  readonly when?: readonly QuestCondition[];
+  readonly dialogue: string;
 }
 
-export const WORLD_NPC_SPAWNS: readonly WorldNpcSpawn[] = [
-  { id: 'alex', name: 'Alex', xTiles: 12, yTiles: 10 },
-  { id: 'mina', name: 'Mina', xTiles: 18, yTiles: 8 },
-  { id: 'somchai', name: 'Somchai', xTiles: 23, yTiles: 18 },
-  { id: 'nida', name: 'Nida', xTiles: 32, yTiles: 12 },
-  { id: 'pim', name: 'Pim', xTiles: 10, yTiles: 24 },
-] as const;
+export interface NpcDef {
+  readonly id: string;
+  readonly name: LocalizedText;
+  /** Tile the NPC stands on. */
+  readonly xTiles: number;
+  readonly yTiles: number;
+  /** Ordered most specific first; the last option should have no conditions. */
+  readonly dialogue: readonly NpcDialogueOption[];
+}
+
+/** The dialogue id this NPC uses given current quest progress, or undefined if none applies. */
+export function selectNpcDialogue(npc: NpcDef, log: QuestLog): string | undefined {
+  return npc.dialogue.find((o) => (o.when ?? []).every((c) => conditionHolds(log, c)))?.dialogue;
+}
