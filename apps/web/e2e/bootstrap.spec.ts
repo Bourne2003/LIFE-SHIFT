@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { TILE_SIZE, WORLD_NPC_SPAWNS } from '@life-shift/shared';
+import { NPCS } from '@life-shift/game-data';
+import { TILE_SIZE, tileFeet } from '@life-shift/shared';
 import { PREVIEW_URL } from './urls';
 import { cameraState, npcState, openGame, playerPos, trackErrors } from './helpers';
 
@@ -97,13 +98,10 @@ test('player collides with world obstacles', async ({ page, isMobile }) => {
 test('world loads NPC spawn data', async ({ page }) => {
   await openGame(page);
   const npcs = await npcState(page);
-  expect(npcs).toHaveLength(WORLD_NPC_SPAWNS.length);
+  expect(npcs).toHaveLength(NPCS.length);
 
   const expectedById = new Map(
-    WORLD_NPC_SPAWNS.map((npc) => [
-      npc.id,
-      { name: npc.name, x: (npc.xTiles + 0.5) * TILE_SIZE, y: (npc.yTiles + 1) * TILE_SIZE },
-    ]),
+    NPCS.map((npc) => [npc.id, { name: npc.name, ...tileFeet(npc.xTiles, npc.yTiles) }]),
   );
   for (const npc of npcs) {
     const expected = expectedById.get(npc.id);

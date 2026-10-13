@@ -13,6 +13,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@life-shift/game-data": "*",
     "@life-shift/shared": "*",
     "phaser": "3.90.0"
   },

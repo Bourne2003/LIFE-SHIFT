@@ -1,5 +1,12 @@
 import Phaser from 'phaser';
-import { TILE_SIZE, WORLD_NPC_SPAWNS, WORLD_OBSTACLES } from '@life-shift/shared';
+import { NPCS } from '@life-shift/game-data';
+import {
+  IDLE_INTENT,
+  TILE_SIZE,
+  WORLD_OBSTACLES,
+  findInteractionTarget,
+  tileFeet,
+} from '@life-shift/shared';
 import { Player } from '../entities/Player';
 import { TextureKeys } from '../game/assets';
 import { SceneKeys } from '../game/sceneKeys';
@@ -10,7 +17,11 @@ import { KeyboardInputSource } from '../input/KeyboardInputSource';
 export const WORLD_TILES_WIDE = 40;
 export const WORLD_TILES_HIGH = 30;
 
-/** The explorable world with roads, static obstacles and placeholder NPCs. */
+/** NPC collision box at the feet, in world units. */
+const NPC_FEET_W = 14;
+const NPC_FEET_H = 10;
+
+/** The explorable world with roads, static obstacles and NPCs the player can talk to. */
 export class WorldScene extends Phaser.Scene {
   private services!: GameServices;
   private _player!: Player;
@@ -44,14 +55,16 @@ export class WorldScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, worldW, worldH);
     this._player = new Player(this, worldW / 2, worldH / 2);
-    this.npcSprites = WORLD_NPC_SPAWNS.map((spawn) => {
-      const sprite = this.add
-        .image((spawn.xTiles + 0.5) * TILE_SIZE, (spawn.yTiles + 1) * TILE_SIZE, TextureKeys.Npc)
-        .setOrigin(0.5, 1);
-      sprite.setDepth(sprite.y);
-      return { id: spawn.id, name: spawn.name, sprite };
-    });
     const obstacleBodies = this.physics.add.staticGroup();
+    this.npcSprites = NPCS.map((npc) => {
+      const feet = tileFeet(npc.xTiles, npc.yTiles);
+      const sprite = this.add.image(feet.x, feet.y, TextureKeys.Npc).setOrigin(0.5, 1);
+      sprite.setDepth(sprite.y);
+      // NPCs block the player at their feet only, like the player's own body.
+      const blocker = this.add.zone(feet.x, feet.y - NPC_FEET_H / 2, NPC_FEET_W, NPC_FEET_H);
+      obstacleBodies.add(blocker);
+      return { id: npc.id, name: npc.name, sprite };
+    });
     for (const obstacle of WORLD_OBSTACLES) {
       const x = obstacle.xTiles * TILE_SIZE;
       const y = obstacle.yTiles * TILE_SIZE;
@@ -82,7 +95,22 @@ export class WorldScene extends Phaser.Scene {
   }
 
   override update(): void {
-    this._player.applyIntent(this.services.input.getMoveIntent());
+    const { input, session } = this.services;
+    const actions = input.consumeActions();
+
+    if (session.inConversation) {
+      this._player.applyIntent(IDLE_INTENT);
+      if (actions.has('navUp')) session.moveSelection(-1);
+      if (actions.has('navDown')) session.moveSelection(1);
+      if (actions.has('interact')) session.advance();
+      return;
+    }
+
+    this._player.applyIntent(input.getMoveIntent());
+    const body = this._player.sprite.body;
+    const target = findInteractionTarget({ x: body.center.x, y: body.bottom }, this.npcs);
+    session.setNearbyNpc(target?.id ?? null);
+    if (target && actions.has('interact')) session.talkTo(target.id);
   }
 
   get npcs(): readonly { id: string; name: string; x: number; y: number }[] {

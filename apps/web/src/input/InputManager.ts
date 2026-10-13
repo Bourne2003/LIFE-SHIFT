@@ -1,5 +1,5 @@
 import { combineIntents, type MoveIntent } from '@life-shift/shared';
-import type { InputSource } from './InputSource';
+import type { InputAction, InputSource } from './InputSource';
 
 /**
  * Merges every active input device into one intent. Gameplay reads only from here, so adding a
@@ -16,5 +16,14 @@ export class InputManager {
 
   getMoveIntent(): MoveIntent {
     return combineIntents([...this.sources].map((s) => s.getMoveIntent()));
+  }
+
+  /** Actions pressed on any device since the last call. Call once per frame. */
+  consumeActions(): ReadonlySet<InputAction> {
+    const actions = new Set<InputAction>();
+    // Ask every source, so each one clears its pending presses.
+    for (const source of this.sources)
+      for (const a of source.consumeActions?.() ?? []) actions.add(a);
+    return actions;
   }
 }

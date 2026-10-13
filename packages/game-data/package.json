@@ -1,0 +1,16 @@
+{
+  "name": "@life-shift/game-data",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Game content as data: NPCs, dialogue and quests. Validated by tests; no logic.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@life-shift/shared": "*"
+  }
+}

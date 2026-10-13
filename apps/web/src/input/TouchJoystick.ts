@@ -38,8 +38,9 @@ export class TouchJoystick implements InputSource {
     return this.pointerId !== null;
   }
 
-  private onDown(pointer: Phaser.Input.Pointer): void {
-    if (this.pointerId !== null || !pointer.wasTouch) return;
+  private onDown(pointer: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
+    // Touches on UI widgets (dialogue box, buttons) belong to them, not to the joystick.
+    if (this.pointerId !== null || !pointer.wasTouch || over.length > 0) return;
     // Right side is reserved for future action buttons (interact, menu).
     if (pointer.x > this.scene.scale.width * 0.6) return;
     this.pointerId = pointer.id;

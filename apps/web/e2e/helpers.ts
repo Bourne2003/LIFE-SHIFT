@@ -27,3 +27,20 @@ export function cameraState(page: Page) {
 export function npcState(page: Page) {
   return page.evaluate(() => window.__LIFE_SHIFT__!.npcs());
 }
+
+export function nearbyNpc(page: Page) {
+  return page.evaluate(() => window.__LIFE_SHIFT__!.nearbyNpc());
+}
+
+export function dialogueState(page: Page) {
+  return page.evaluate(() => window.__LIFE_SHIFT__!.dialogue());
+}
+
+export function questLog(page: Page) {
+  return page.evaluate(() => window.__LIFE_SHIFT__!.quests());
+}
+
+/** Places the player's feet at a world position (dev-only test hook). */
+export function teleport(page: Page, feet: { x: number; y: number }) {
+  return page.evaluate(({ x, y }) => window.__LIFE_SHIFT__!.teleport(x, y), feet);
+}

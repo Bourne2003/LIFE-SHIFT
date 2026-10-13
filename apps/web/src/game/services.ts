@@ -1,19 +1,22 @@
 import type Phaser from 'phaser';
+import { CONTENT } from '@life-shift/game-data';
 import { InputManager } from '../input/InputManager';
+import { GameSession } from './session';
 
 /**
  * Game-wide services shared between scenes. Created once per Phaser.Game and reached through
  * getServices() instead of module-level globals, so a second game instance (tests, split-screen)
- * never shares state. Future systems (world state, save, network) register here.
+ * never shares state. Future systems (save, network) register here.
  */
 export interface GameServices {
   readonly input: InputManager;
+  readonly session: GameSession;
 }
 
 const REGISTRY_KEY = 'services';
 
 export function createServices(): GameServices {
-  return { input: new InputManager() };
+  return { input: new InputManager(), session: new GameSession(CONTENT) };
 }
 
 export function installServices(game: Phaser.Game, services: GameServices): void {
