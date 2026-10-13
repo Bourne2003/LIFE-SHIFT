@@ -26,5 +26,5 @@ across devices.
 
 - Adding a language = adding it to `LOCALES`; type checks and validation list everything to
   translate.
-- The bundle gains the font files (~60 KB woff2 for Thai + Latin, two weights), loaded only for
+- The bundle gains the font files (~39 KB woff2 for Thai + Latin, two weights), loaded only for
   the scripts actually used thanks to `unicode-range`.
