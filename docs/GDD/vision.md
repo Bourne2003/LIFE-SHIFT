@@ -37,13 +37,15 @@ developer experience, visual quality.
 | --- | ---------------------- | ----------------------------------------------------------------------------- | -------- |
 | 1   | Browser Game Bootstrap | TS + Vite + Phaser, scene, player, movement, camera, responsive canvas, touch | **Done** |
 | 2   | Playable City          | Small map, collision, NPCs, interaction, dialogue, basic quest                | **Done** |
-| 3   | World Memory           | World state, quest consequences, NPC memory, save/load                        | Next     |
+| 3   | World Memory           | World state, quest consequences, NPC memory, save/load                        | **Done** |
 | 4   | LAN Multiplayer        | Local server, room, connection, sync, disconnect handling                     |          |
 | 5   | Online Ready           | Deploy config, env config, HTTPS, database design, monitoring                 |          |
 
 Multiplayer order: local single-player → local server → LAN → Internet → persistent accounts →
 persistent world. Multiplayer stays behind `VITE_MULTIPLAYER_ENABLED` until single-player is
 stable.
+
+Next up: inventory and a basic shop economy, which complete the MVP below before milestone 4.
 
 ## MVP definition (end of milestone 3 + shop)
 

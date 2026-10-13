@@ -6,8 +6,8 @@ A browser-first life simulation / RPG where NPCs live their own lives, remember 
 world changes in response to what you do. Runs on desktop, tablet and mobile browsers with no
 install.
 
-**Status:** Milestone 2 — _Playable City_ — complete: walk around, talk to NPCs, finish
-_Mina's Recipe_. See [docs/GDD/vision.md](docs/GDD/vision.md)
+**Status:** Milestone 3 — _World Memory_ — complete: finishing _Mina's Recipe_ opens a noodle
+stall in the city, NPCs remember you, and progress is saved automatically on the device. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
 ## Quick start

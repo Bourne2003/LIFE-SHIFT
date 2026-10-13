@@ -88,6 +88,7 @@ export class UIScene extends Phaser.Scene {
 
   private onSessionEvent(event: SessionEvent): void {
     if (event.type === 'changed') return this.render();
+    if (event.type === 'stateChanged') return;
     const title = this.i18n.text(event.title);
     const { ui } = this.i18n;
     this.toast(event.type === 'questStarted' ? ui.questStarted(title) : ui.questCompleted(title));

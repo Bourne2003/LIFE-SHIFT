@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
-import type { Locale, LocalizedText, QuestLog } from '@life-shift/shared';
+import type { GameState, Locale, LocalizedText, QuestLog } from '@life-shift/shared';
+import { SAVE_KEY } from './SaveService';
 import { SceneKeys } from './sceneKeys';
 import { getServices } from './services';
 import type { ConversationView } from './session';
@@ -27,6 +28,12 @@ export interface DebugApi {
   nearbyNpc(): string | null;
   dialogue(): ConversationView | null;
   quests(): QuestLog;
+  /** The full persistent state (what a save contains). */
+  state(): GameState;
+  /** Ids of world props currently shown. */
+  props(): string[];
+  /** Whether a save exists in storage right now. */
+  hasSave(): boolean;
   /** Screen position of the touch interact button, if this device has one. */
   interactButton(): { x: number; y: number; visible: boolean } | null;
   locale(): Locale;
@@ -81,16 +88,15 @@ export function installDebugApi(game: Phaser.Game): void {
     nearbyNpc: () => session().nearbyNpc?.id ?? null,
     dialogue: () => session().conversation,
     quests: () => session().quests,
+    state: () => session().state,
+    props: () => world().visibleProps,
+    hasSave: () => window.localStorage.getItem(SAVE_KEY) !== null,
     interactButton: () => {
       const button = ui().interactButton;
       return button ? { ...button.position, visible: button.visible } : null;
     },
     locale: () => getServices(world()).i18n.locale,
     languageButton: () => ui().languageButtonCenter,
-    teleport: (x, y) => {
-      const { sprite } = world().player;
-      // The body's bottom edge is the sprite's bottom edge (see Player).
-      sprite.body.reset(x, y - sprite.displayHeight / 2);
-    },
+    teleport: (x, y) => world().player.placeFeetAt(x, y),
   };
 }
