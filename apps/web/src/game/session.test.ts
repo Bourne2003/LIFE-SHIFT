@@ -39,7 +39,7 @@ describe('GameSession', () => {
   it("completes Mina's recipe and reports quest events", () => {
     const session = new GameSession(CONTENT);
     const events: SessionEvent[] = [];
-    session.on((e) => e.type !== 'changed' && events.push(e));
+    session.on((e) => (e.type === 'questStarted' || e.type === 'questCompleted') && events.push(e));
 
     session.talkTo('mina');
     session.advance();
@@ -62,6 +62,9 @@ describe('GameSession', () => {
     expect(session.quests['minas-recipe']).toEqual({ status: 'completed' });
     expect(session.trackedQuests).toEqual([]);
     expect(events.map((e) => e.type)).toEqual(['questStarted', 'questCompleted']);
+    // The world changed: Somchai's stall is now part of the city.
+    expect(session.state.flags['somchai-stall-open']).toBe(true);
+    expect(session.visibleProps.map((p) => p.id)).toEqual(['somchai-noodle-stall']);
   });
 
   it('ignores choices that do not exist', () => {
@@ -71,5 +74,41 @@ describe('GameSession', () => {
     expect(session.inConversation).toBe(true);
     session.advance();
     expect(session.inConversation).toBe(false);
+  });
+
+  it('remembers who the player has talked to', () => {
+    const session = new GameSession(CONTENT);
+    session.talkTo('alex');
+    expect(session.conversation?.text.en).toMatch(/Morning/); // first meeting
+    finish(session);
+    session.talkTo('alex');
+    expect(session.conversation?.text.en).toMatch(/you again/);
+    finish(session);
+    expect(session.state.npcs.alex).toEqual({ talks: 2 });
+  });
+
+  it('reports persistent changes but not UI-only ones as stateChanged', () => {
+    const session = new GameSession(CONTENT);
+    let changes = 0;
+    session.on((e) => e.type === 'stateChanged' && changes++);
+    session.setNearbyNpc('mina');
+    expect(changes).toBe(0);
+    session.talkTo('mina'); // remembering the meeting is a state change
+    expect(changes).toBe(1);
+    session.advance();
+    session.moveSelection(1); // highlight only
+    expect(changes).toBe(1);
+  });
+
+  it('continues from a loaded state, reconciled with current content', () => {
+    const session = new GameSession(CONTENT, {
+      quests: { 'minas-recipe': { status: 'completed' }, 'removed-quest': { status: 'completed' } },
+      flags: { 'somchai-stall-open': true },
+      npcs: { mina: { talks: 3 } },
+    });
+    expect(Object.keys(session.quests)).toEqual(['minas-recipe']);
+    expect(session.visibleProps).toHaveLength(1);
+    session.talkTo('mina');
+    expect(session.conversation?.text.en).toMatch(/finally cooks it right/);
   });
 });

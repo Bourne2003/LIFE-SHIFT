@@ -1,13 +1,19 @@
 import {
   advanceDialogue,
   beginDialogue,
+  INITIAL_STATE,
   currentStep,
+  isPropVisible,
+  reconcileState,
+  recordTalk,
   selectNpcDialogue,
   type DialogueDef,
   type GameContent,
+  type GameState,
   type LocalizedText,
   type NpcDef,
   type QuestLog,
+  type WorldPropDef,
 } from '@life-shift/shared';
 
 /** What the dialogue UI shows. */
@@ -27,7 +33,10 @@ export interface TrackedQuest {
 }
 
 export type SessionEvent =
+  /** Anything the UI shows changed (nearby NPC, conversation, game state). */
   | { readonly type: 'changed' }
+  /** The persistent game state changed: worth saving, and the world may need redrawing. */
+  | { readonly type: 'stateChanged' }
   | {
       readonly type: 'questStarted' | 'questCompleted';
       readonly quest: string;
@@ -42,25 +51,40 @@ interface Conversation {
 }
 
 /**
- * Single-player story state for one game: quest progress, the NPC in reach and the open
- * conversation. Scenes talk to it instead of to each other; the world scene feeds it player
+ * Single-player story state for one game: the persistent GameState (quests, world flags, NPC
+ * memory) plus the NPC in reach and the open conversation. Scenes talk to it instead of to each other; the world scene feeds it player
  * actions and the UI scene renders it. Engine-free so it is unit tested in Node. Quest rules live
  * in `@life-shift/shared`, so a future server can run the same logic. Text is returned in every
  * language (LocalizedText) and the UI picks one, so switching language never touches story state.
  */
 export class GameSession {
-  private _quests: QuestLog = {};
+  private _state: GameState;
   private nearby: NpcDef | null = null;
   private convo: Conversation | null = null;
   private readonly listeners = new Set<(event: SessionEvent) => void>();
   private readonly npcsById: ReadonlyMap<string, NpcDef>;
 
-  constructor(private readonly content: GameContent) {
+  /** `initial` is typically a loaded save; it is reconciled with the current content. */
+  constructor(
+    private readonly content: GameContent,
+    initial: GameState = INITIAL_STATE,
+  ) {
     this.npcsById = new Map(content.npcs.map((n) => [n.id, n]));
+    this._state = reconcileState(initial, content.quests);
+  }
+
+  /** The persistent game state (what a save contains). */
+  get state(): GameState {
+    return this._state;
   }
 
   get quests(): QuestLog {
-    return this._quests;
+    return this._state.quests;
+  }
+
+  /** World props that should be shown in the current state. */
+  get visibleProps(): WorldPropDef[] {
+    return this.content.props.filter((p) => isPropVisible(p, this._state));
   }
 
   get nearbyNpc(): { readonly id: string; readonly name: LocalizedText } | null {
@@ -87,7 +111,7 @@ export class GameSession {
   /** Active quests with the description of their current step, for the HUD. */
   get trackedQuests(): TrackedQuest[] {
     return Object.values(this.content.quests).flatMap((quest) => {
-      const stepId = currentStep(this._quests, quest.id);
+      const stepId = currentStep(this._state.quests, quest.id);
       const step = quest.steps.find((s) => s.id === stepId);
       return step ? [{ id: quest.id, title: quest.title, step: step.description }] : [];
     });
@@ -110,11 +134,13 @@ export class GameSession {
   talkTo(npcId: string): boolean {
     const npc = this.npcsById.get(npcId);
     if (!npc || this.convo) return false;
-    const dialogueId = selectNpcDialogue(npc, this._quests);
+    // Choose the dialogue before remembering this talk, so a first meeting is a first meeting.
+    const dialogueId = selectNpcDialogue(npc, this._state);
     const dialogue = dialogueId === undefined ? undefined : this.content.dialogues[dialogueId];
     if (!dialogue) return false;
-    const step = beginDialogue(dialogue, this._quests, this.content.quests);
-    this.update(step.log, { npc, dialogue, node: step.node!, selected: 0 });
+    const met = recordTalk(this._state, npc.id);
+    const step = beginDialogue(dialogue, met, this.content.quests);
+    this.update(step.state, { npc, dialogue, node: step.node!, selected: 0 });
     return true;
   }
 
@@ -139,22 +165,24 @@ export class GameSession {
     const count = c ? (c.dialogue.nodes[c.node]?.choices?.length ?? 0) : 0;
     if (!c || count === 0) return;
     const selected = (((c.selected + delta) % count) + count) % count;
-    this.update(this._quests, { ...c, selected });
+    this.update(this._state, { ...c, selected });
   }
 
   private step(c: Conversation, choice: number | undefined): void {
-    const next = advanceDialogue(c.dialogue, c.node, this._quests, this.content.quests, choice);
-    this.update(next.log, next.node === null ? null : { ...c, node: next.node, selected: 0 });
+    const next = advanceDialogue(c.dialogue, c.node, this._state, this.content.quests, choice);
+    this.update(next.state, next.node === null ? null : { ...c, node: next.node, selected: 0 });
   }
 
-  private update(log: QuestLog, convo: Conversation | null): void {
-    const before = this._quests;
-    this._quests = log;
+  private update(state: GameState, convo: Conversation | null): void {
+    const before = this._state;
+    this._state = state;
     this.convo = convo;
     this.emit({ type: 'changed' });
+    if (state === before) return;
+    this.emit({ type: 'stateChanged' });
     for (const quest of Object.values(this.content.quests)) {
-      const was = before[quest.id]?.status;
-      const now = log[quest.id]?.status;
+      const was = before.quests[quest.id]?.status;
+      const now = state.quests[quest.id]?.status;
       if (was === now) continue;
       if (now === 'active')
         this.emit({ type: 'questStarted', quest: quest.id, title: quest.title });

@@ -27,6 +27,18 @@ export class Player {
     this.sprite.body.setOffset(this.sprite.width * 0.2, this.sprite.height * 0.6);
   }
 
+  /** Bottom-centre of the physics body: where the player stands, in world units. */
+  get feet(): { x: number; y: number } {
+    const b = this.sprite.body;
+    return { x: b.center.x, y: b.bottom };
+  }
+
+  /** Moves the player so they stand at (x, y), e.g. when loading a save. */
+  placeFeetAt(x: number, y: number): void {
+    // The body's bottom edge is the sprite's bottom edge.
+    this.sprite.body.reset(x, y - this.sprite.displayHeight / 2);
+  }
+
   get facing(): Facing {
     return this._facing;
   }

@@ -3,26 +3,30 @@ import { CONTENT } from '@life-shift/game-data';
 import { createBrowserLocale } from '../i18n/browser';
 import type { LocaleService } from '../i18n/LocaleService';
 import { InputManager } from '../input/InputManager';
+import { SaveService, browserStore } from './SaveService';
 import { GameSession } from './session';
 
 /**
  * Game-wide services shared between scenes. Created once per Phaser.Game and reached through
  * getServices() instead of module-level globals, so a second game instance (tests, split-screen)
- * never shares state. Future systems (save, network) register here.
+ * never shares state. Future systems (network) register here.
  */
 export interface GameServices {
   readonly input: InputManager;
   readonly session: GameSession;
   readonly i18n: LocaleService;
+  readonly save: SaveService;
 }
 
 const REGISTRY_KEY = 'services';
 
 export function createServices(): GameServices {
+  const save = new SaveService(browserStore());
   return {
     input: new InputManager(),
-    session: new GameSession(CONTENT),
+    session: new GameSession(CONTENT, save.loaded?.state),
     i18n: createBrowserLocale(),
+    save,
   };
 }
 

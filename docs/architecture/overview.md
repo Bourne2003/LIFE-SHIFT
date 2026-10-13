@@ -7,10 +7,10 @@ npm workspaces monorepo (see [ADR-002](../decisions/ADR-002-stack-and-monorepo.m
 | Package              | Runs in        | Contains                                                         |
 | -------------------- | -------------- | ---------------------------------------------------------------- |
 | `apps/web`           | Browser        | Phaser scenes, entities, input devices, UI                       |
-| `packages/shared`    | Browser + Node | Types, constants, pure rules (movement, quests, dialogue).       |
+| `packages/shared`    | Browser + Node | Types, pure rules (movement, game state, dialogue, save format). |
 | `apps/server`        | Node (planned) | Authoritative multiplayer server — milestone 4                   |
 | `packages/protocol`  | Both (planned) | Client/server message schemas — milestone 4                      |
-| `packages/game-data` | Browser + Node | NPC, dialogue and quest data (items later). Data only, no logic. |
+| `packages/game-data` | Browser + Node | NPCs, dialogue, quests, world props (items later). Data only.    |
 
 Rule: browser code may import `shared`, `protocol`, `game-data`; it must never import
 `apps/server`. Internal packages export TypeScript source directly (no build step).
@@ -23,7 +23,9 @@ config.ts               VITE_ env → typed ClientConfig
 game/
   createGame.ts         Phaser.Game config (RESIZE scale mode, arcade physics, scene list)
   services.ts           GameServices container (input, session), stored in the game registry
-  session.ts            GameSession: quest log, NPC in reach, open conversation (no Phaser)
+  session.ts            GameSession: GameState, NPC in reach, open conversation (no Phaser)
+  SaveService.ts        single save slot in localStorage; unreadable saves are set aside
+  autosave.ts           saves on state change, every 5 s while moving, and on page hide
   resize.ts             ResizeObserver workaround for a Phaser rotation bug
   viewport.ts           camera zoom for any screen size (pure, unit tested)
   assets.ts             TextureKeys — the only way gameplay refers to art
@@ -73,10 +75,17 @@ WorldScene ──nearest NPC in range──► GameSession ◄──taps── U
                                           └──events (changed, questStarted/Completed)──► UIScene
 ```
 
+All persistent progress is one plain `GameState` (`packages/shared/src/state`): the quest log,
+world **flags** and per-NPC **memory** (how often you talked). Content tests it with conditions
+(`{ quest, status }`, `{ flag }`, `{ npc, met }`) and changes it with effects (`startQuest`,
+`completeStep`, `setFlag`). A quest's `onComplete` effects are its consequence for the world, e.g.
+Mina's Recipe sets `somchai-stall-open`, which shows the noodle-stall **world prop** and changes
+what several NPCs say. Saves are versioned (see
+[ADR-005](../decisions/ADR-005-save-format.md)).
+
 Content lives in `packages/game-data` (see [ADR-003](../decisions/ADR-003-content-as-typed-data.md)).
-An NPC lists dialogue options guarded by quest conditions (first match wins); dialogue nodes and
-choices carry effects (`startQuest`, `completeStep`). Quest progress is a plain `QuestLog` object,
-ready for save/load in milestone 3. While a conversation is open the player does not move.
+An NPC lists dialogue options guarded by conditions (first match wins); dialogue nodes and
+choices carry effects. While a conversation is open the player does not move.
 
 ### Scenes and scaling
 

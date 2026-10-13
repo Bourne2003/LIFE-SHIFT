@@ -9,4 +9,5 @@ export const TextureKeys = {
   Ground: 'ground',
   Road: 'road',
   Building: 'building',
+  NoodleStall: 'noodle-stall',
 } as const;
