@@ -13,6 +13,19 @@ export interface UiStrings {
   /** Label of the button that switches to the *other* language. */
   readonly switchLanguage: string;
   readonly switchLanguageAria: string;
+  money(amount: number): string;
+  readonly bagButton: string;
+  readonly bagTitle: string;
+  readonly bagEmpty: string;
+  readonly bagHintKeyboard: string;
+  owned(count: number): string;
+  readonly buyButton: string;
+  readonly closeButton: string;
+  readonly shopHintKeyboard: string;
+  readonly shopHintTouch: string;
+  bought(item: string, price: number): string;
+  cannotAfford(item: string): string;
+  moneyReceived(amount: number): string;
 }
 
 export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
@@ -27,6 +40,19 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     questCompleted: (title) => `ทำเควสต์สำเร็จ: ${title}`,
     switchLanguage: 'EN',
     switchLanguageAria: 'Switch to English',
+    money: (n) => `฿${n}`,
+    bagButton: 'กระเป๋า',
+    bagTitle: 'กระเป๋าของฉัน',
+    bagEmpty: 'ยังไม่มีของในกระเป๋า',
+    bagHintKeyboard: 'กด I หรือ Esc เพื่อปิด',
+    owned: (n) => `มีอยู่ ${n}`,
+    buyButton: 'ซื้อ',
+    closeButton: 'ปิด',
+    shopHintKeyboard: 'ลูกศรเพื่อเลือก · E ซื้อ · Esc ปิด',
+    shopHintTouch: 'แตะสินค้าเพื่อเลือก แล้วกด “ซื้อ”',
+    bought: (item, price) => `ซื้อ${item}แล้ว (−฿${price})`,
+    cannotAfford: (item) => `เงินไม่พอซื้อ${item}`,
+    moneyReceived: (n) => `ได้รับเงิน ฿${n}`,
   },
   en: {
     moveHintKeyboard: 'WASD / Arrow keys to move · E to talk',
@@ -39,5 +65,18 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     questCompleted: (title) => `Quest complete: ${title}`,
     switchLanguage: 'ไทย',
     switchLanguageAria: 'เปลี่ยนเป็นภาษาไทย',
+    money: (n) => `฿${n}`,
+    bagButton: 'Bag',
+    bagTitle: 'My bag',
+    bagEmpty: 'Your bag is empty.',
+    bagHintKeyboard: 'I or Esc to close',
+    owned: (n) => `Owned: ${n}`,
+    buyButton: 'Buy',
+    closeButton: 'Close',
+    shopHintKeyboard: 'Arrows to choose · E to buy · Esc to close',
+    shopHintTouch: 'Tap an item, then Buy',
+    bought: (item, price) => `Bought ${item} (−฿${price})`,
+    cannotAfford: (item) => `Not enough money for ${item}`,
+    moneyReceived: (n) => `Received ฿${n}`,
   },
 };

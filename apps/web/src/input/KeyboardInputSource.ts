@@ -3,11 +3,11 @@ import { intentFromDirections, type MoveIntent } from '@life-shift/shared';
 import type { InputAction, InputSource } from './InputSource';
 
 type Keys = Record<
-  'up' | 'down' | 'left' | 'right' | 'w' | 'a' | 's' | 'd' | 'e' | 'space' | 'enter',
+  'up' | 'down' | 'left' | 'right' | 'w' | 'a' | 's' | 'd' | 'e' | 'space' | 'enter' | 'esc' | 'i',
   Phaser.Input.Keyboard.Key
 >;
 
-/** Arrow keys and WASD to move; E, Space or Enter to interact. */
+/** Arrow keys and WASD to move; E, Space or Enter to interact; Esc to close; I for the bag. */
 export class KeyboardInputSource implements InputSource {
   private readonly keys: Keys;
   private pending: InputAction[] = [];
@@ -27,6 +27,8 @@ export class KeyboardInputSource implements InputSource {
         e: K.E,
         space: K.SPACE,
         enter: K.ENTER,
+        esc: K.ESC,
+        i: K.I,
       },
       true,
     ) as Keys;
@@ -41,6 +43,8 @@ export class KeyboardInputSource implements InputSource {
     bind('interact', k.e, k.space, k.enter);
     bind('navUp', k.up, k.w);
     bind('navDown', k.down, k.s);
+    bind('cancel', k.esc);
+    bind('inventory', k.i);
   }
 
   getMoveIntent(): MoveIntent {

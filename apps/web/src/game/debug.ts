@@ -3,7 +3,7 @@ import type { GameState, Locale, LocalizedText, QuestLog } from '@life-shift/sha
 import { SAVE_KEY } from './SaveService';
 import { SceneKeys } from './sceneKeys';
 import { getServices } from './services';
-import type { ConversationView } from './session';
+import type { ConversationView, ShopView } from './session';
 import type { UIScene } from '../scenes/UIScene';
 import type { WorldScene } from '../scenes/WorldScene';
 
@@ -32,6 +32,11 @@ export interface DebugApi {
   state(): GameState;
   /** Ids of world props currently shown. */
   props(): string[];
+  /** The open shop, if any. */
+  shop(): ShopView | null;
+  inventoryOpen(): boolean;
+  /** Screen positions of the bag button and of open panels' rows and buttons. */
+  controls(): UIScene['controls'];
   /** Whether a save exists in storage right now. */
   hasSave(): boolean;
   /** Screen position of the touch interact button, if this device has one. */
@@ -90,6 +95,9 @@ export function installDebugApi(game: Phaser.Game): void {
     quests: () => session().quests,
     state: () => session().state,
     props: () => world().visibleProps,
+    shop: () => session().shopView,
+    inventoryOpen: () => session().inventoryOpen,
+    controls: () => ui().controls,
     hasSave: () => window.localStorage.getItem(SAVE_KEY) !== null,
     interactButton: () => {
       const button = ui().interactButton;

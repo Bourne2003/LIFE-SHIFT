@@ -145,6 +145,16 @@ export class WorldScene extends Phaser.Scene {
   override update(): void {
     const { input, session } = this.services;
     const actions = input.consumeActions();
+    if (actions.has('inventory') && !session.inShop) session.toggleInventory();
+
+    if (session.inShop) {
+      this._player.applyIntent(IDLE_INTENT);
+      if (actions.has('navUp')) session.moveSelection(-1);
+      if (actions.has('navDown')) session.moveSelection(1);
+      if (actions.has('interact')) session.buySelected();
+      if (actions.has('cancel')) session.closeShop();
+      return;
+    }
 
     if (session.inConversation) {
       this._player.applyIntent(IDLE_INTENT);
@@ -154,6 +164,7 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    if (actions.has('cancel')) session.toggleInventory(false);
     this._player.applyIntent(input.getMoveIntent());
     const target = findInteractionTarget(this._player.feet, this.npcs);
     session.setNearbyNpc(target?.id ?? null);

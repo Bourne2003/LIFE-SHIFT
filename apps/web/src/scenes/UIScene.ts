@@ -2,10 +2,12 @@ import Phaser from 'phaser';
 import { SceneKeys } from '../game/sceneKeys';
 import { getServices } from '../game/services';
 import type { GameSession, SessionEvent } from '../game/session';
+import type { LocalizedText } from '@life-shift/shared';
 import type { LocaleService } from '../i18n/LocaleService';
 import { TouchActionButton } from '../input/TouchActionButton';
 import { TouchJoystick } from '../input/TouchJoystick';
 import { DialogueBox } from '../ui/DialogueBox';
+import { ListPanel, PANEL_DEPTH } from '../ui/ListPanel';
 import { TEXT_STYLE, setSmartWrap } from '../ui/style';
 
 const MARGIN = 16;
@@ -17,7 +19,8 @@ const LABEL_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 
 /**
  * Screen-space overlay drawn above the world with an unzoomed camera: touch controls, the
- * language switch, the interaction prompt, the dialogue box and the quest tracker. It renders the
+ * language switch, the interaction prompt, the dialogue box, money, quest tracker, and the shop
+ * and bag panels. It renders the
  * GameSession in the current language and never changes the world directly.
  */
 export class UIScene extends Phaser.Scene {
@@ -30,6 +33,11 @@ export class UIScene extends Phaser.Scene {
   private prompt!: Phaser.GameObjects.Text;
   private tracker!: Phaser.GameObjects.Text;
   private dialogue!: DialogueBox;
+  private money!: Phaser.GameObjects.Text;
+  private bagButton!: Phaser.GameObjects.Text;
+  private shopPanel!: ListPanel;
+  private bagPanel!: ListPanel;
+  private toasts: Phaser.GameObjects.Text[] = [];
 
   constructor() {
     super(SceneKeys.UI);
@@ -38,6 +46,23 @@ export class UIScene extends Phaser.Scene {
   /** On-screen interact button (touch devices only), for tests. */
   get interactButton(): TouchActionButton | null {
     return this.actionButton;
+  }
+
+  /** Screen positions of UI controls, for tests. */
+  get controls() {
+    const centre = (t: Phaser.GameObjects.Text) => {
+      const b = t.getBounds();
+      return { x: b.centerX, y: b.centerY };
+    };
+    return {
+      bagButton: centre(this.bagButton),
+      dialogueChoices: this.dialogue.choiceBounds.map((b) => ({
+        x: b.x + b.width / 2,
+        y: b.y + b.height / 2,
+      })),
+      shop: this.shopPanel.isVisible ? this.shopPanel.hitPoints : null,
+      bag: this.bagPanel.isVisible ? this.bagPanel.hitPoints : null,
+    };
   }
 
   /** Centre of the language switch in screen space, for tests. */
@@ -63,6 +88,13 @@ export class UIScene extends Phaser.Scene {
       .text(MARGIN, MARGIN, '', { ...LABEL_STYLE, fontStyle: 'bold' })
       .setInteractive({ useHandCursor: true });
     this.languageButton.on('pointerdown', () => i18n.cycle());
+    this.bagButton = this.add
+      .text(0, MARGIN, '', { ...LABEL_STYLE, fontStyle: 'bold' })
+      .setInteractive({ useHandCursor: true });
+    this.bagButton.on('pointerdown', () => session.toggleInventory());
+    this.money = this.add
+      .text(0, MARGIN, '', { ...LABEL_STYLE, fontStyle: 'bold' })
+      .setOrigin(1, 0);
 
     this.prompt = this.add.text(0, 0, '', LABEL_STYLE).setOrigin(0.5, 1).setVisible(false);
     this.tracker = setSmartWrap(
@@ -75,6 +107,17 @@ export class UIScene extends Phaser.Scene {
       { onContinue: () => session.advance(), onChoose: (i) => session.choose(i) },
       i18n,
       this.touch,
+    );
+    this.shopPanel = new ListPanel(
+      this,
+      () => i18n.locale,
+      // Tapping only selects; buying is always an explicit Buy press, so nobody buys by accident.
+      (i) => session.selectShopEntry(i),
+    );
+    this.bagPanel = new ListPanel(
+      this,
+      () => i18n.locale,
+      () => {},
     );
 
     this.showHint();
@@ -89,9 +132,20 @@ export class UIScene extends Phaser.Scene {
   private onSessionEvent(event: SessionEvent): void {
     if (event.type === 'changed') return this.render();
     if (event.type === 'stateChanged') return;
-    const title = this.i18n.text(event.title);
     const { ui } = this.i18n;
-    this.toast(event.type === 'questStarted' ? ui.questStarted(title) : ui.questCompleted(title));
+    const t = (text: LocalizedText) => this.i18n.text(text);
+    switch (event.type) {
+      case 'questStarted':
+        return this.toast(ui.questStarted(t(event.title)));
+      case 'questCompleted':
+        return this.toast(ui.questCompleted(t(event.title)));
+      case 'purchased':
+        return this.toast(ui.bought(t(event.item), event.price));
+      case 'cannotAfford':
+        return this.toast(ui.cannotAfford(t(event.item)), '#ff8a80');
+      case 'moneyReceived':
+        return this.toast(ui.moneyReceived(event.amount));
+    }
   }
 
   private render(): void {
@@ -101,7 +155,7 @@ export class UIScene extends Phaser.Scene {
     this.hint?.setText(this.touch ? ui.moveHintTouch : ui.moveHintKeyboard);
     this.actionButton?.setLabel(ui.talkButton);
 
-    const nearby = session.inConversation ? null : session.nearbyNpc;
+    const nearby = session.inConversation || session.inShop ? null : session.nearbyNpc;
     this.prompt.setVisible(!!nearby && !this.touch);
     if (nearby) this.prompt.setText(ui.talkPrompt(i18n.text(nearby.name)));
     this.actionButton?.setVisible(!!nearby);
@@ -113,20 +167,72 @@ export class UIScene extends Phaser.Scene {
     );
 
     this.dialogue.render(session.conversation);
+    this.money.setText(ui.money(session.state.money));
+    this.bagButton.setText(ui.bagButton);
+    this.renderShop();
+    this.renderBag();
     this.layout();
+  }
+
+  private renderShop(): void {
+    const { session, i18n } = this;
+    const { ui } = i18n;
+    const shop = session.shopView;
+    if (!shop) return this.shopPanel.render(null);
+    const selected = shop.entries[shop.selected];
+    this.shopPanel.render({
+      title: i18n.text(shop.name),
+      titleDetail: ui.money(shop.money),
+      rows: shop.entries.map((e) => ({
+        label: e.owned ? `${i18n.text(e.name)}  (${ui.owned(e.owned)})` : i18n.text(e.name),
+        detail: ui.money(e.price),
+        dim: !e.affordable,
+      })),
+      selected: shop.selected,
+      emptyText: '',
+      ...(selected ? { note: i18n.text(selected.description) } : {}),
+      hint: this.touch ? ui.shopHintTouch : ui.shopHintKeyboard,
+      buttons: [
+        { label: ui.buyButton, onPress: () => session.buySelected() },
+        { label: ui.closeButton, onPress: () => session.closeShop() },
+      ],
+    });
+  }
+
+  private renderBag(): void {
+    const { session, i18n } = this;
+    const { ui } = i18n;
+    if (!session.inventoryOpen) return this.bagPanel.render(null);
+    const items = session.inventory;
+    this.bagPanel.render({
+      title: ui.bagTitle,
+      titleDetail: ui.money(session.state.money),
+      rows: items.map((e) => ({ label: i18n.text(e.name), detail: `×${e.count}` })),
+      selected: null,
+      emptyText: ui.bagEmpty,
+      ...(items.length
+        ? { note: items.map((e) => `• ${i18n.text(e.description)}`).join('\n') }
+        : {}),
+      ...(this.touch ? {} : { hint: ui.bagHintKeyboard }),
+      buttons: [{ label: ui.closeButton, onPress: () => session.toggleInventory(false) }],
+    });
   }
 
   private layout(): void {
     const { width, height } = this.scale;
+    this.bagButton.setPosition(this.languageButton.x + this.languageButton.width + 8, MARGIN);
     const below = this.languageButton.y + this.languageButton.height + 8;
     this.hint?.setPosition(MARGIN, below).setWordWrapWidth(width * 0.55);
     this.prompt.setPosition(width / 2, height - MARGIN * 2);
-    this.tracker.setPosition(width - MARGIN, MARGIN);
-    const languageRight = this.languageButton.x + this.languageButton.width;
+    this.money.setPosition(width - MARGIN, MARGIN);
+    this.tracker.setPosition(width - MARGIN, MARGIN + this.money.height + 8);
+    const languageRight = this.bagButton.x + this.bagButton.width;
     this.tracker.setWordWrapWidth(Math.min(320, width - languageRight - MARGIN * 2));
 
     this.actionButton?.placeBottomRight(width, height);
     this.dialogue.layout();
+    this.shopPanel.layout();
+    this.bagPanel.layout();
   }
 
   private showHint(): void {
@@ -149,25 +255,33 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  private toast(message: string): void {
+  /** Short message in the upper middle of the screen; several stack instead of overlapping. */
+  private toast(message: string, color = '#ffd479'): void {
+    const last = this.toasts.at(-1);
+    const y = last ? last.y + last.height + 8 : this.scale.height * 0.25;
     const text = setSmartWrap(
       this.add
-        .text(this.scale.width / 2, this.scale.height * 0.25, message, {
+        .text(this.scale.width / 2, y, message, {
           ...LABEL_STYLE,
           fontSize: '22px',
-          color: '#ffd479',
+          color,
           align: 'center',
         })
-        .setOrigin(0.5),
+        .setOrigin(0.5, 0)
+        .setDepth(PANEL_DEPTH + 1),
       this.scale.width - MARGIN * 2,
       () => this.i18n.locale,
     );
+    this.toasts.push(text);
     this.tweens.add({
       targets: text,
       alpha: 0,
       delay: 2500,
       duration: 700,
-      onComplete: () => text.destroy(),
+      onComplete: () => {
+        this.toasts = this.toasts.filter((t) => t !== text);
+        text.destroy();
+      },
     });
   }
 }
