@@ -6,6 +6,7 @@ import {
   WORLD_OBSTACLES,
   findInteractionTarget,
   tileFeet,
+  type LocalizedText,
 } from '@life-shift/shared';
 import { Player } from '../entities/Player';
 import { TextureKeys } from '../game/assets';
@@ -27,7 +28,7 @@ export class WorldScene extends Phaser.Scene {
   private _player!: Player;
   private npcSprites: {
     id: string;
-    name: string;
+    name: LocalizedText;
     sprite: Phaser.GameObjects.Image;
   }[] = [];
 
@@ -113,7 +114,7 @@ export class WorldScene extends Phaser.Scene {
     if (target && actions.has('interact')) session.talkTo(target.id);
   }
 
-  get npcs(): readonly { id: string; name: string; x: number; y: number }[] {
+  get npcs(): readonly { id: string; name: LocalizedText; x: number; y: number }[] {
     return this.npcSprites.map(({ id, name, sprite }) => ({
       id,
       name,

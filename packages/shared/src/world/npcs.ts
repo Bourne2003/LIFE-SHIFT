@@ -1,4 +1,5 @@
 import { conditionHolds, type QuestCondition } from '../dialogue/dialogue';
+import type { LocalizedText } from '../i18n/locale';
 import type { QuestLog } from '../quests/quests';
 
 /** Which dialogue an NPC uses; the first option whose conditions all hold is chosen. */
@@ -9,7 +10,7 @@ export interface NpcDialogueOption {
 
 export interface NpcDef {
   readonly id: string;
-  readonly name: string;
+  readonly name: LocalizedText;
   /** Tile the NPC stands on. */
   readonly xTiles: number;
   readonly yTiles: number;

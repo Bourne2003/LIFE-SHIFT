@@ -1,6 +1,7 @@
 export * from './constants';
 export * from './content/validate';
 export * from './dialogue/dialogue';
+export * from './i18n/locale';
 export * from './math/vector';
 export * from './movement/movement';
 export * from './quests/quests';

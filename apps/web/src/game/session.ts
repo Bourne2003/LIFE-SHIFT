@@ -5,6 +5,7 @@ import {
   selectNpcDialogue,
   type DialogueDef,
   type GameContent,
+  type LocalizedText,
   type NpcDef,
   type QuestLog,
 } from '@life-shift/shared';
@@ -12,17 +13,17 @@ import {
 /** What the dialogue UI shows. */
 export interface ConversationView {
   readonly npcId: string;
-  readonly speaker: string;
-  readonly text: string;
-  readonly choices: readonly string[];
+  readonly speaker: LocalizedText;
+  readonly text: LocalizedText;
+  readonly choices: readonly LocalizedText[];
   /** Highlighted choice; meaningful only when there are choices. */
   readonly selected: number;
 }
 
 export interface TrackedQuest {
   readonly id: string;
-  readonly title: string;
-  readonly step: string;
+  readonly title: LocalizedText;
+  readonly step: LocalizedText;
 }
 
 export type SessionEvent =
@@ -30,7 +31,7 @@ export type SessionEvent =
   | {
       readonly type: 'questStarted' | 'questCompleted';
       readonly quest: string;
-      readonly title: string;
+      readonly title: LocalizedText;
     };
 
 interface Conversation {
@@ -44,7 +45,8 @@ interface Conversation {
  * Single-player story state for one game: quest progress, the NPC in reach and the open
  * conversation. Scenes talk to it instead of to each other; the world scene feeds it player
  * actions and the UI scene renders it. Engine-free so it is unit tested in Node. Quest rules live
- * in `@life-shift/shared`, so a future server can run the same logic.
+ * in `@life-shift/shared`, so a future server can run the same logic. Text is returned in every
+ * language (LocalizedText) and the UI picks one, so switching language never touches story state.
  */
 export class GameSession {
   private _quests: QuestLog = {};
@@ -61,7 +63,7 @@ export class GameSession {
     return this._quests;
   }
 
-  get nearbyNpc(): { readonly id: string; readonly name: string } | null {
+  get nearbyNpc(): { readonly id: string; readonly name: LocalizedText } | null {
     return this.nearby;
   }
 

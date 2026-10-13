@@ -3,10 +3,16 @@ import type { QuestCatalog } from '@life-shift/shared';
 export const QUESTS: QuestCatalog = {
   'minas-recipe': {
     id: 'minas-recipe',
-    title: "Mina's Recipe",
+    title: { th: 'สูตรลับของมีนา', en: "Mina's Recipe" },
     steps: [
-      { id: 'deliver', description: 'Bring the recipe to Somchai' },
-      { id: 'return', description: 'Tell Mina the recipe arrived' },
+      {
+        id: 'deliver',
+        description: { th: 'นำสูตรอาหารไปให้สมชาย', en: 'Bring the recipe to Somchai' },
+      },
+      {
+        id: 'return',
+        description: { th: 'กลับไปบอกมีนาว่าส่งสูตรแล้ว', en: 'Tell Mina the recipe arrived' },
+      },
     ],
   },
 };

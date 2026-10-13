@@ -19,6 +19,9 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
+**Languages:** Thai (default) and English — switch with the **EN / ไทย** button at the top left,
+or open the game with `?lang=en` / `?lang=th`. The choice is remembered on the device.
+
 Controls: **WASD / arrow keys** to move and **E / Space / Enter** to talk on desktop (arrow keys
 pick dialogue choices). On touch screens, **drag on the left side** of the screen for a virtual
 joystick, tap **Talk** near someone, and tap the dialogue box or a choice to continue.

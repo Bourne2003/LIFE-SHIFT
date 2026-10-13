@@ -16,12 +16,15 @@ import {
   type QuestLog,
 } from '../src';
 
+/** Same text in every locale, for tests that do not care about language. */
+const t = (s: string) => ({ th: s, en: s });
+
 const quest: QuestDef = {
   id: 'q',
-  title: 'Q',
+  title: t('Q'),
   steps: [
-    { id: 'one', description: 'first' },
-    { id: 'two', description: 'second' },
+    { id: 'one', description: t('first') },
+    { id: 'two', description: t('second') },
   ],
 };
 const quests: QuestCatalog = { q: quest };
@@ -64,15 +67,15 @@ const dialogue: DialogueDef = {
   id: 'd',
   start: 'a',
   nodes: {
-    a: { text: 'hi', next: 'b' },
+    a: { text: t('hi'), next: 'b' },
     b: {
-      text: 'help?',
+      text: t('help?'),
       choices: [
-        { text: 'yes', next: 'c', effects: [{ type: 'startQuest', quest: 'q' }] },
-        { text: 'no' },
+        { text: t('yes'), next: 'c', effects: [{ type: 'startQuest', quest: 'q' }] },
+        { text: t('no') },
       ],
     },
-    c: { text: 'done', effects: [{ type: 'completeStep', quest: 'q', step: 'one' }] },
+    c: { text: t('done'), effects: [{ type: 'completeStep', quest: 'q', step: 'one' }] },
   },
 };
 
@@ -103,7 +106,7 @@ describe('dialogue', () => {
 describe('selectNpcDialogue', () => {
   const npc: NpcDef = {
     id: 'n',
-    name: 'N',
+    name: t('N'),
     xTiles: 0,
     yTiles: 0,
     dialogue: [
@@ -123,7 +126,7 @@ describe('validateContent', () => {
   const valid: GameContent = {
     quests,
     dialogues: { d: dialogue },
-    npcs: [{ id: 'n', name: 'N', xTiles: 0, yTiles: 0, dialogue: [{ dialogue: 'd' }] }],
+    npcs: [{ id: 'n', name: t('N'), xTiles: 0, yTiles: 0, dialogue: [{ dialogue: 'd' }] }],
   };
 
   it('accepts consistent content', () => {
@@ -139,7 +142,7 @@ describe('validateContent', () => {
           start: 'missing',
           nodes: {
             a: {
-              text: 'x',
+              text: t('x'),
               next: 'nowhere',
               effects: [{ type: 'completeStep', quest: 'q', step: 'nope' }],
             },
@@ -147,10 +150,10 @@ describe('validateContent', () => {
         },
       },
       npcs: [
-        { id: 'n', name: 'N', xTiles: 0, yTiles: 0, dialogue: [{ dialogue: 'ghost' }] },
+        { id: 'n', name: t('N'), xTiles: 0, yTiles: 0, dialogue: [{ dialogue: 'ghost' }] },
         {
           id: 'n',
-          name: 'N2',
+          name: t('N2'),
           xTiles: 0,
           yTiles: 0,
           dialogue: [{ when: [{ quest: 'zzz', status: 'active' }], dialogue: 'd' }],
@@ -169,5 +172,27 @@ describe('validateContent', () => {
         'npc "n": last dialogue option must be unconditional',
       ]),
     );
+  });
+});
+
+describe('validateContent translations', () => {
+  it('reports text missing in a locale', () => {
+    const content: GameContent = {
+      quests: { q: { ...quest, title: { th: 'เควสต์', en: '' } } },
+      dialogues: { d: { id: 'd', start: 'a', nodes: { a: { text: { th: 'สวัสดี' } as never } } } },
+      npcs: [
+        {
+          id: 'n',
+          name: { th: 'น', en: 'N' },
+          xTiles: 0,
+          yTiles: 0,
+          dialogue: [{ dialogue: 'd' }],
+        },
+      ],
+    };
+    expect(validateContent(content)).toEqual([
+      'quest "q" title: missing translation (en)',
+      'dialogue "d" node "a": missing translation (en)',
+    ]);
   });
 });

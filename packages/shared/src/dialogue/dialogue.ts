@@ -1,3 +1,4 @@
+import type { LocalizedText } from '../i18n/locale';
 import { completeStep, currentStep, questStatus, startQuest } from '../quests/quests';
 import type { QuestDef, QuestLog, QuestStatus } from '../quests/quests';
 
@@ -14,7 +15,7 @@ export type StoryEffect =
   | { readonly type: 'completeStep'; readonly quest: string; readonly step: string };
 
 export interface DialogueChoice {
-  readonly text: string;
+  readonly text: LocalizedText;
   /** Node to continue with; omitted ends the conversation. */
   readonly next?: string;
   readonly effects?: readonly StoryEffect[];
@@ -22,8 +23,8 @@ export interface DialogueChoice {
 
 export interface DialogueNode {
   /** Defaults to the name of the NPC being talked to. */
-  readonly speaker?: string;
-  readonly text: string;
+  readonly speaker?: LocalizedText;
+  readonly text: LocalizedText;
   /** Applied when the node is shown. */
   readonly effects?: readonly StoryEffect[];
   /** Node shown after this one when it has no choices; omitted ends the conversation. */

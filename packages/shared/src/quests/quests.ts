@@ -1,14 +1,16 @@
+import type { LocalizedText } from '../i18n/locale';
+
 /** A quest as authored in content data. Steps are completed in order. */
 export interface QuestDef {
   readonly id: string;
-  readonly title: string;
+  readonly title: LocalizedText;
   readonly steps: readonly QuestStepDef[];
 }
 
 export interface QuestStepDef {
   readonly id: string;
   /** Shown in the quest tracker while this step is current. */
-  readonly description: string;
+  readonly description: LocalizedText;
 }
 
 /** Progress of a started quest. Quests that were never started have no entry. */

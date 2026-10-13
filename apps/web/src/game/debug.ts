@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import type { QuestLog } from '@life-shift/shared';
+import type { Locale, LocalizedText, QuestLog } from '@life-shift/shared';
 import { SceneKeys } from './sceneKeys';
 import { getServices } from './services';
 import type { ConversationView } from './session';
@@ -22,13 +22,16 @@ export interface DebugApi {
   };
   world(): { width: number; height: number };
   camera(): { scrollX: number; scrollY: number; zoom: number; width: number; height: number };
-  npcs(): { id: string; name: string; x: number; y: number }[];
+  npcs(): { id: string; name: LocalizedText; x: number; y: number }[];
   /** Id of the NPC the player can talk to right now. */
   nearbyNpc(): string | null;
   dialogue(): ConversationView | null;
   quests(): QuestLog;
   /** Screen position of the touch interact button, if this device has one. */
   interactButton(): { x: number; y: number; visible: boolean } | null;
+  locale(): Locale;
+  /** Screen position (centre) of the language switch button. */
+  languageButton(): { x: number; y: number };
   /** Moves the player so its feet stand at (x, y) in world units. */
   teleport(x: number, y: number): void;
 }
@@ -82,6 +85,8 @@ export function installDebugApi(game: Phaser.Game): void {
       const button = ui().interactButton;
       return button ? { ...button.position, visible: button.visible } : null;
     },
+    locale: () => getServices(world()).i18n.locale,
+    languageButton: () => ui().languageButtonCenter,
     teleport: (x, y) => {
       const { sprite } = world().player;
       // The body's bottom edge is the sprite's bottom edge (see Player).

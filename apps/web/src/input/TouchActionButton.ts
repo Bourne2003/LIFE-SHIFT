@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { IDLE_INTENT, type MoveIntent } from '@life-shift/shared';
+import { TEXT_STYLE } from '../ui/style';
 import type { InputAction, InputSource } from './InputSource';
 
 const RADIUS = 40;
@@ -18,9 +19,7 @@ export class TouchActionButton implements InputSource {
       .circle(0, 0, RADIUS, 0xffffff, 0.25)
       .setStrokeStyle(3, 0xffffff, 0.6)
       .setInteractive({ useHandCursor: true });
-    this.text = scene.add
-      .text(0, 0, '', { fontFamily: 'system-ui, sans-serif', fontSize: '18px', color: '#ffffff' })
-      .setOrigin(0.5);
+    this.text = scene.add.text(0, 0, '', TEXT_STYLE).setOrigin(0.5);
     this.circle.on('pointerdown', () => this.pending.push('interact'));
     this.setVisible(false);
   }

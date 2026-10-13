@@ -1,5 +1,7 @@
 import type Phaser from 'phaser';
 import { CONTENT } from '@life-shift/game-data';
+import { createBrowserLocale } from '../i18n/browser';
+import type { LocaleService } from '../i18n/LocaleService';
 import { InputManager } from '../input/InputManager';
 import { GameSession } from './session';
 
@@ -11,12 +13,17 @@ import { GameSession } from './session';
 export interface GameServices {
   readonly input: InputManager;
   readonly session: GameSession;
+  readonly i18n: LocaleService;
 }
 
 const REGISTRY_KEY = 'services';
 
 export function createServices(): GameServices {
-  return { input: new InputManager(), session: new GameSession(CONTENT) };
+  return {
+    input: new InputManager(),
+    session: new GameSession(CONTENT),
+    i18n: createBrowserLocale(),
+  };
 }
 
 export function installServices(game: Phaser.Game, services: GameServices): void {

@@ -34,6 +34,12 @@ scenes/
   WorldScene            world, obstacles, NPCs, player, camera; feeds actions to the session
   UIScene               screen-space overlay: joystick, Talk button, prompt, dialogue, quest HUD
 ui/DialogueBox.ts       conversation panel (view only; reports taps via callbacks)
+ui/wrapText.ts          language-aware line wrapping (Thai has no spaces between words)
+ui/style.ts             shared text style (bundled Noto Sans Thai) + setSmartWrap()
+i18n/
+  strings.ts            every UI string, typed Record<Locale, UiStrings>
+  LocaleService.ts      current language, change events, content-text lookup
+  browser.ts            ?lang= / saved choice / <html lang> wiring
 entities/Player.ts      physics body at the feet; turns a MoveIntent into velocity/facing/state
 input/
   InputSource.ts        interface: getMoveIntent(), optional consumeActions()
@@ -78,6 +84,15 @@ The canvas always fills its container (`Scale.RESIZE`). Instead of letterboxing,
 camera zoom is recomputed on resize so roughly 12 tiles fit on the short screen edge (quarter-step
 zoom, 1×–3×, never showing past the world edge). UI lives in its own scene with an unzoomed camera
 so controls keep a constant physical size.
+
+### Languages (i18n)
+
+Thai is the primary language, English the second (see
+[ADR-004](../decisions/ADR-004-thai-first-i18n.md)). Content text is `LocalizedText`
+(`{ th, en }`) and `validateContent()` fails on any missing translation; UI strings are a typed
+`Record<Locale, UiStrings>`, so a missing one is a compile error. Story state never contains
+resolved strings: `GameSession` returns `LocalizedText` and the UI resolves it through
+`LocaleService`, so switching language re-renders without touching game state.
 
 ## Testing
 

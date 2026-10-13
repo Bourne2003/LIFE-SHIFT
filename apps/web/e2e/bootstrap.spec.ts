@@ -106,7 +106,7 @@ test('world loads NPC spawn data', async ({ page }) => {
   for (const npc of npcs) {
     const expected = expectedById.get(npc.id);
     expect(expected).toBeDefined();
-    expect(npc.name).toBe(expected!.name);
+    expect(npc.name).toEqual(expected!.name);
     expect(npc.x).toBeCloseTo(expected!.x, 0);
     expect(npc.y).toBeCloseTo(expected!.y, 0);
   }

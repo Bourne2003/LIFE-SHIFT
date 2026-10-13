@@ -1,10 +1,16 @@
 import type { NpcDef } from '@life-shift/shared';
 
 export const NPCS: readonly NpcDef[] = [
-  { id: 'alex', name: 'Alex', xTiles: 12, yTiles: 10, dialogue: [{ dialogue: 'alex-greeting' }] },
+  {
+    id: 'alex',
+    name: { th: 'อเล็กซ์', en: 'Alex' },
+    xTiles: 12,
+    yTiles: 10,
+    dialogue: [{ dialogue: 'alex-greeting' }],
+  },
   {
     id: 'mina',
-    name: 'Mina',
+    name: { th: 'มีนา', en: 'Mina' },
     xTiles: 18,
     yTiles: 8,
     dialogue: [
@@ -22,7 +28,7 @@ export const NPCS: readonly NpcDef[] = [
   },
   {
     id: 'somchai',
-    name: 'Somchai',
+    name: { th: 'สมชาย', en: 'Somchai' },
     xTiles: 23,
     yTiles: 18,
     dialogue: [
@@ -33,6 +39,18 @@ export const NPCS: readonly NpcDef[] = [
       { dialogue: 'somchai-greeting' },
     ],
   },
-  { id: 'nida', name: 'Nida', xTiles: 32, yTiles: 12, dialogue: [{ dialogue: 'nida-greeting' }] },
-  { id: 'pim', name: 'Pim', xTiles: 10, yTiles: 26, dialogue: [{ dialogue: 'pim-greeting' }] },
+  {
+    id: 'nida',
+    name: { th: 'นิดา', en: 'Nida' },
+    xTiles: 32,
+    yTiles: 12,
+    dialogue: [{ dialogue: 'nida-greeting' }],
+  },
+  {
+    id: 'pim',
+    name: { th: 'พิม', en: 'Pim' },
+    xTiles: 10,
+    yTiles: 26,
+    dialogue: [{ dialogue: 'pim-greeting' }],
+  },
 ];
