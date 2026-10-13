@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   INITIAL_STATE,
+  STARTING_MONEY,
   WORLD_OBSTACLES,
+  buyItem,
   advanceDialogue,
   beginDialogue,
   isPropVisible,
@@ -11,7 +13,7 @@ import {
   validateContent,
   type GameState,
 } from '@life-shift/shared';
-import { CONTENT, DIALOGUES, NPCS, PROPS, QUESTS } from '../src';
+import { CONTENT, DIALOGUES, NPCS, PROPS, QUESTS, SHOPS } from '../src';
 
 type Rect = { x: number; y: number; w: number; h: number };
 const overlaps = (a: Rect, b: Rect) =>
@@ -89,6 +91,32 @@ describe('game content', () => {
     expect(dialogueOf('somchai', s)).toBe('somchai-stall');
     expect(dialogueOf('nida', s)).toBe('nida-stall');
     expect(dialogueOf('alex', s)).toBe('alex-stall');
+    expect(s.money).toBe(STARTING_MONEY + 40); // quest reward
+  });
+
+  it("Pim's garland: buy at Aunt Daeng's, deliver, get paid", () => {
+    let s: GameState = talk('pim', INITIAL_STATE, 1);
+    expect(s.quests).toEqual({}); // declined
+    s = talk('pim', s);
+    expect(dialogueOf('pim', s)).toBe('pim-waiting'); // no garland yet
+
+    const shop = SHOPS['daeng-store']!;
+    const price = shop.stock.find((e) => e.item === 'jasmine-garland')!.price;
+    const bought = buyItem(s, shop, 'jasmine-garland');
+    if (!bought.ok) throw new Error(bought.reason);
+    s = bought.state;
+    expect(dialogueOf('pim', s)).toBe('pim-receive');
+
+    s = talk('pim', s);
+    expect(questStatus(s.quests, 'pims-garland')).toBe('completed');
+    expect(s.inventory).toEqual({}); // the garland was handed over
+    expect(s.money).toBe(STARTING_MONEY - price + 30);
+    expect(dialogueOf('pim', s)).toBe('pim-after');
+  });
+
+  it('a new player can afford anything Aunt Daeng sells', () => {
+    for (const { item, price } of SHOPS['daeng-store']!.stock)
+      expect(price, item).toBeLessThanOrEqual(STARTING_MONEY);
   });
 
   it('NPCs remember meeting the player', () => {

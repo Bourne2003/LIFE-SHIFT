@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   INITIAL_STATE,
   SAVE_VERSION,
+  STARTING_MONEY,
   parseSave,
   reconcileState,
   serializeSave,
@@ -13,6 +14,8 @@ const state: GameState = {
   quests: { q: { status: 'active', step: 'two' }, done: { status: 'completed' } },
   flags: { open: true },
   npcs: { mina: { talks: 3 } },
+  money: 120,
+  inventory: { garland: 2 },
 };
 
 describe('save format', () => {
@@ -44,6 +47,8 @@ describe('save format', () => {
         quests: { good: { status: 'completed' }, bad: { status: 'lost' }, odd: 5 },
         flags: { yes: true, nope: 'true' },
         npcs: { a: { talks: 2 }, b: { talks: -1 }, c: { talks: 1.5 } },
+        money: -5,
+        inventory: { ok: 1, zero: 0, neg: -2, frac: 0.5 },
       },
       player: { x: 'far', y: 1 },
     });
@@ -52,8 +57,32 @@ describe('save format', () => {
       quests: { good: { status: 'completed' } },
       flags: { yes: true },
       npcs: { a: { talks: 2 } },
+      money: STARTING_MONEY,
+      inventory: { ok: 1 },
     });
     expect(result.ok && result.save.player).toBeNull();
+  });
+
+  it('upgrades a version 1 save (before money and items existed)', () => {
+    const v1 = JSON.stringify({
+      version: 1,
+      savedAt: 'x',
+      state: { quests: { q: { status: 'completed' } }, flags: { open: true }, npcs: {} },
+      player: { x: 1, y: 2 },
+    });
+    const result = parseSave(v1);
+    expect(result.ok && result.save).toEqual({
+      version: SAVE_VERSION,
+      savedAt: 'x',
+      state: {
+        quests: { q: { status: 'completed' } },
+        flags: { open: true },
+        npcs: {},
+        money: STARTING_MONEY,
+        inventory: {},
+      },
+      player: { x: 1, y: 2 },
+    });
   });
 
   it('treats a save without state as a fresh game', () => {
@@ -71,9 +100,10 @@ describe('reconcileState', () => {
     },
   };
 
-  it('drops removed quests and restarts quests whose step was removed', () => {
-    const fixed = reconcileState(state, quests);
+  it('drops removed quests and items, and restarts quests whose step was removed', () => {
+    const fixed = reconcileState(state, { quests, items: {} });
     expect(fixed.quests).toEqual({ q: { status: 'active', step: 'one' } });
+    expect(fixed.inventory).toEqual({});
     expect(fixed.flags).toBe(state.flags);
   });
 });

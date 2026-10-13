@@ -1,5 +1,7 @@
 import type { DialogueDef } from '../dialogue/dialogue';
 import { missingLocales, type LocalizedText } from '../i18n/locale';
+import type { ItemCatalog } from '../items/items';
+import type { ShopCatalog } from '../shops/shops';
 import type { QuestCatalog, StoryCondition, StoryEffect } from '../state/gameState';
 import type { NpcDef } from '../world/npcs';
 import type { WorldPropDef } from '../world/props';
@@ -9,16 +11,18 @@ export interface GameContent {
   readonly dialogues: Readonly<Record<string, DialogueDef>>;
   readonly quests: QuestCatalog;
   readonly props: readonly WorldPropDef[];
+  readonly items: ItemCatalog;
+  readonly shops: ShopCatalog;
 }
 
 /**
  * Checks that content data is internally consistent: unique ids; every reference (dialogue, node,
- * quest, quest step, NPC) resolves; every flag a condition tests is set by some effect; and all
+ * quest, quest step, NPC, item, shop) resolves; every flag a condition tests is set by some effect; and all
  * player-facing text exists in every locale. Returns human-readable problems; empty means valid.
  */
 export function validateContent(content: GameContent): string[] {
   const problems: string[] = [];
-  const { npcs, dialogues, quests, props } = content;
+  const { npcs, dialogues, quests, props, items, shops } = content;
   const npcIdSet = new Set(npcs.map((n) => n.id));
   const flagsSet = new Set<string>();
   const flagsTested: { where: string; flag: string }[] = [];
@@ -26,6 +30,9 @@ export function validateContent(content: GameContent): string[] {
   const checkText = (where: string, text: LocalizedText | undefined) => {
     const missing = missingLocales(text);
     if (missing.length) problems.push(`${where}: missing translation (${missing.join(', ')})`);
+  };
+  const checkItemRef = (where: string, item: string) => {
+    if (!items[item]) problems.push(`${where}: unknown item "${item}"`);
   };
   const checkQuestRef = (where: string, quest: string, step?: string) => {
     const def = quests[quest];
@@ -36,13 +43,17 @@ export function validateContent(content: GameContent): string[] {
   const checkEffects = (where: string, effects: readonly StoryEffect[] | undefined) => {
     for (const e of effects ?? []) {
       if (e.type === 'setFlag') flagsSet.add(e.flag);
-      else checkQuestRef(where, e.quest, e.type === 'completeStep' ? e.step : undefined);
+      else if (e.type === 'changeItem') checkItemRef(where, e.item);
+      else if (e.type === 'changeMoney') {
+        if (!Number.isInteger(e.amount)) problems.push(`${where}: money must be whole baht`);
+      } else checkQuestRef(where, e.quest, e.type === 'completeStep' ? e.step : undefined);
     }
   };
   const checkConditions = (where: string, conditions: readonly StoryCondition[] | undefined) => {
     for (const c of conditions ?? []) {
       if ('quest' in c) checkQuestRef(where, c.quest, c.step);
       else if ('flag' in c) flagsTested.push({ where, flag: c.flag });
+      else if ('item' in c) checkItemRef(where, c.item);
       else if (!npcIdSet.has(c.npc)) problems.push(`${where}: unknown npc "${c.npc}"`);
     }
   };
@@ -77,6 +88,8 @@ export function validateContent(content: GameContent): string[] {
       for (const choice of node.choices ?? []) {
         checkNode(nodeId, choice.next);
         checkText(`${where} node "${nodeId}" choice`, choice.text);
+        if (choice.opensShop !== undefined && !shops[choice.opensShop])
+          problems.push(`${where} node "${nodeId}": unknown shop "${choice.opensShop}"`);
         checkEffects(`${where} node "${nodeId}"`, choice.effects);
       }
     }
@@ -104,6 +117,24 @@ export function validateContent(content: GameContent): string[] {
     if (propIds.has(prop.id)) problems.push(`${where}: duplicate id`);
     propIds.add(prop.id);
     checkConditions(where, prop.when);
+  }
+
+  for (const [key, item] of Object.entries(items)) {
+    if (item.id !== key) problems.push(`item "${key}": id is "${item.id}"`);
+    checkText(`item "${key}" name`, item.name);
+    checkText(`item "${key}" description`, item.description);
+  }
+
+  for (const [key, shop] of Object.entries(shops)) {
+    const where = `shop "${key}"`;
+    if (shop.id !== key) problems.push(`${where}: id is "${shop.id}"`);
+    checkText(`${where} name`, shop.name);
+    if (shop.stock.length === 0) problems.push(`${where}: sells nothing`);
+    for (const { item, price } of shop.stock) {
+      checkItemRef(where, item);
+      if (!Number.isInteger(price) || price <= 0)
+        problems.push(`${where}: price of "${item}" must be a positive whole number`);
+    }
   }
 
   for (const { where, flag } of flagsTested)

@@ -15,6 +15,23 @@ export const QUESTS: QuestCatalog = {
       },
     ],
     // The world remembers: Somchai opens a noodle stall with Mina's recipe.
-    onComplete: [{ type: 'setFlag', flag: 'somchai-stall-open' }],
+    onComplete: [
+      { type: 'setFlag', flag: 'somchai-stall-open' },
+      { type: 'changeMoney', amount: 40 },
+    ],
+  },
+  'pims-garland': {
+    id: 'pims-garland',
+    title: { th: 'พวงมาลัยของพิม', en: 'A Garland for Pim' },
+    steps: [
+      {
+        id: 'bring',
+        description: {
+          th: 'ซื้อพวงมาลัยมะลิที่ร้านป้าแดงแล้วนำไปให้พิม',
+          en: 'Buy a jasmine garland at Aunt Daeng’s and bring it to Pim',
+        },
+      },
+    ],
+    onComplete: [{ type: 'changeMoney', amount: 30 }],
   },
 };

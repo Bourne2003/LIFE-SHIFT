@@ -59,6 +59,21 @@ export const NPCS: readonly NpcDef[] = [
     name: { th: 'พิม', en: 'Pim' },
     xTiles: 10,
     yTiles: 26,
-    dialogue: [{ dialogue: 'pim-greeting' }],
+    dialogue: [
+      {
+        when: [{ quest: 'pims-garland', status: 'active' }, { item: 'jasmine-garland' }],
+        dialogue: 'pim-receive',
+      },
+      { when: [{ quest: 'pims-garland', status: 'active' }], dialogue: 'pim-waiting' },
+      { when: [{ quest: 'pims-garland', status: 'completed' }], dialogue: 'pim-after' },
+      { dialogue: 'pim-ask' },
+    ],
+  },
+  {
+    id: 'daeng',
+    name: { th: 'ป้าแดง', en: 'Aunt Daeng' },
+    xTiles: 32,
+    yTiles: 9,
+    dialogue: [{ dialogue: 'daeng-hello' }],
   },
 ];
