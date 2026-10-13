@@ -1,10 +1,9 @@
-import { conditionHolds, type QuestCondition } from '../dialogue/dialogue';
 import type { LocalizedText } from '../i18n/locale';
-import type { QuestLog } from '../quests/quests';
+import { allHold, type GameState, type StoryCondition } from '../state/gameState';
 
 /** Which dialogue an NPC uses; the first option whose conditions all hold is chosen. */
 export interface NpcDialogueOption {
-  readonly when?: readonly QuestCondition[];
+  readonly when?: readonly StoryCondition[];
   readonly dialogue: string;
 }
 
@@ -18,7 +17,7 @@ export interface NpcDef {
   readonly dialogue: readonly NpcDialogueOption[];
 }
 
-/** The dialogue id this NPC uses given current quest progress, or undefined if none applies. */
-export function selectNpcDialogue(npc: NpcDef, log: QuestLog): string | undefined {
-  return npc.dialogue.find((o) => (o.when ?? []).every((c) => conditionHolds(log, c)))?.dialogue;
+/** The dialogue id this NPC uses in the current state, or undefined if none applies. */
+export function selectNpcDialogue(npc: NpcDef, state: GameState): string | undefined {
+  return npc.dialogue.find((o) => allHold(state, o.when))?.dialogue;
 }

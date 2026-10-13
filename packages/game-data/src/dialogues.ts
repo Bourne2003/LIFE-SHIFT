@@ -10,6 +10,22 @@ const list: readonly DialogueDef[] = [
     th: 'อรุณสวัสดิ์! เมืองนี้ดูเปลี่ยนไปทุกวันเลยนะ ว่าไหม?',
     en: 'Morning! The city feels different every day, doesn’t it?',
   }),
+  line('alex-again', {
+    th: 'อ้าว เจอกันอีกแล้ว! วันนี้ไปไหนมาล่ะ?',
+    en: 'Oh, you again! Where are you off to today?',
+  }),
+  line('alex-stall', {
+    th: 'ได้ยินว่าสมชายเปิดร้านก๋วยเตี๋ยวแล้ว! เห็นว่าเธอช่วยไว้ด้วยนี่',
+    en: 'I heard Somchai opened a noodle stall! Word is you helped him.',
+  }),
+  line('nida-stall', {
+    th: 'ร้านก๋วยเตี๋ยวใหม่ของสมชายคนต่อคิวเพียบเลย ฉันจะไปลองบ้าง',
+    en: 'Somchai’s new noodle stall already has a queue. I’m going to try it.',
+  }),
+  line('somchai-stall', {
+    th: 'ร้านเปิดแล้วครับ! ทั้งหมดนี้เพราะสูตรของมีนากับความช่วยเหลือของคุณ',
+    en: 'The stall is open! All thanks to Mina’s recipe and your help.',
+  }),
   line('nida-greeting', {
     th: 'ฉันรอร้านเปิดอยู่น่ะ ได้ยินมาว่ามีของใหม่เข้ามาด้วย',
     en: 'I’m waiting for the shop to open. Rumour says they got new stock.',

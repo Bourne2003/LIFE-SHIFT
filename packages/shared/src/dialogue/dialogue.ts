@@ -1,18 +1,10 @@
 import type { LocalizedText } from '../i18n/locale';
-import { completeStep, currentStep, questStatus, startQuest } from '../quests/quests';
-import type { QuestDef, QuestLog, QuestStatus } from '../quests/quests';
-
-/** True when the quest is in `status` (and, if given, at `step`). */
-export interface QuestCondition {
-  readonly quest: string;
-  readonly status: QuestStatus;
-  readonly step?: string;
-}
-
-/** A change to game state triggered by dialogue. */
-export type StoryEffect =
-  | { readonly type: 'startQuest'; readonly quest: string }
-  | { readonly type: 'completeStep'; readonly quest: string; readonly step: string };
+import {
+  applyEffects,
+  type GameState,
+  type QuestCatalog,
+  type StoryEffect,
+} from '../state/gameState';
 
 export interface DialogueChoice {
   readonly text: LocalizedText;
@@ -38,55 +30,31 @@ export interface DialogueDef {
   readonly nodes: Readonly<Record<string, DialogueNode>>;
 }
 
-export type QuestCatalog = Readonly<Record<string, QuestDef>>;
-
-export function conditionHolds(log: QuestLog, condition: QuestCondition): boolean {
-  if (questStatus(log, condition.quest) !== condition.status) return false;
-  return condition.step === undefined || currentStep(log, condition.quest) === condition.step;
-}
-
-export function applyEffects(
-  log: QuestLog,
-  effects: readonly StoryEffect[] | undefined,
-  quests: QuestCatalog,
-): QuestLog {
-  let result = log;
-  for (const effect of effects ?? []) {
-    const quest = quests[effect.quest];
-    if (!quest) throw new Error(`Unknown quest "${effect.quest}"`);
-    result =
-      effect.type === 'startQuest'
-        ? startQuest(result, quest)
-        : completeStep(result, quest, effect.step);
-  }
-  return result;
-}
-
 /** Where a conversation is: the node being shown, or null once it has ended. */
 export interface DialogueStep {
   readonly node: string | null;
-  readonly log: QuestLog;
+  readonly state: GameState;
 }
 
 function enter(
   dialogue: DialogueDef,
   nodeId: string | undefined,
-  log: QuestLog,
+  state: GameState,
   quests: QuestCatalog,
 ): DialogueStep {
-  if (nodeId === undefined) return { node: null, log };
+  if (nodeId === undefined) return { node: null, state };
   const node = dialogue.nodes[nodeId];
   if (!node) throw new Error(`Dialogue "${dialogue.id}" has no node "${nodeId}"`);
-  return { node: nodeId, log: applyEffects(log, node.effects, quests) };
+  return { node: nodeId, state: applyEffects(state, node.effects, quests) };
 }
 
 /** Opens a dialogue at its start node, applying that node's effects. */
 export function beginDialogue(
   dialogue: DialogueDef,
-  log: QuestLog,
+  state: GameState,
   quests: QuestCatalog,
 ): DialogueStep {
-  return enter(dialogue, dialogue.start, log, quests);
+  return enter(dialogue, dialogue.start, state, quests);
 }
 
 /**
@@ -96,14 +64,14 @@ export function beginDialogue(
 export function advanceDialogue(
   dialogue: DialogueDef,
   nodeId: string,
-  log: QuestLog,
+  state: GameState,
   quests: QuestCatalog,
   choiceIndex?: number,
 ): DialogueStep {
   const node = dialogue.nodes[nodeId];
   if (!node) throw new Error(`Dialogue "${dialogue.id}" has no node "${nodeId}"`);
-  if (!node.choices?.length) return enter(dialogue, node.next, log, quests);
+  if (!node.choices?.length) return enter(dialogue, node.next, state, quests);
   const choice = choiceIndex === undefined ? undefined : node.choices[choiceIndex];
   if (!choice) throw new Error(`Node "${nodeId}" needs a choice in 0..${node.choices.length - 1}`);
-  return enter(dialogue, choice.next, applyEffects(log, choice.effects, quests), quests);
+  return enter(dialogue, choice.next, applyEffects(state, choice.effects, quests), quests);
 }

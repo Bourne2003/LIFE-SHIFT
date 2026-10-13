@@ -1,10 +1,13 @@
 import type { LocalizedText } from '../i18n/locale';
+import type { StoryEffect } from '../state/gameState';
 
 /** A quest as authored in content data. Steps are completed in order. */
 export interface QuestDef {
   readonly id: string;
   readonly title: LocalizedText;
   readonly steps: readonly QuestStepDef[];
+  /** Applied once when the last step is completed: the quest's consequence for the world. */
+  readonly onComplete?: readonly StoryEffect[];
 }
 
 export interface QuestStepDef {

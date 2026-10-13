@@ -14,5 +14,7 @@ export const QUESTS: QuestCatalog = {
         description: { th: 'กลับไปบอกมีนาว่าส่งสูตรแล้ว', en: 'Tell Mina the recipe arrived' },
       },
     ],
+    // The world remembers: Somchai opens a noodle stall with Mina's recipe.
+    onComplete: [{ type: 'setFlag', flag: 'somchai-stall-open' }],
   },
 };

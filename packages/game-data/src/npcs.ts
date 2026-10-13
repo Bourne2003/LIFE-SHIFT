@@ -6,7 +6,11 @@ export const NPCS: readonly NpcDef[] = [
     name: { th: 'อเล็กซ์', en: 'Alex' },
     xTiles: 12,
     yTiles: 10,
-    dialogue: [{ dialogue: 'alex-greeting' }],
+    dialogue: [
+      { when: [{ flag: 'somchai-stall-open' }], dialogue: 'alex-stall' },
+      { when: [{ npc: 'alex', met: true }], dialogue: 'alex-again' },
+      { dialogue: 'alex-greeting' },
+    ],
   },
   {
     id: 'mina',
@@ -36,6 +40,7 @@ export const NPCS: readonly NpcDef[] = [
         when: [{ quest: 'minas-recipe', status: 'active', step: 'deliver' }],
         dialogue: 'somchai-receive',
       },
+      { when: [{ flag: 'somchai-stall-open' }], dialogue: 'somchai-stall' },
       { dialogue: 'somchai-greeting' },
     ],
   },
@@ -44,7 +49,10 @@ export const NPCS: readonly NpcDef[] = [
     name: { th: 'นิดา', en: 'Nida' },
     xTiles: 32,
     yTiles: 12,
-    dialogue: [{ dialogue: 'nida-greeting' }],
+    dialogue: [
+      { when: [{ flag: 'somchai-stall-open' }], dialogue: 'nida-stall' },
+      { dialogue: 'nida-greeting' },
+    ],
   },
   {
     id: 'pim',
