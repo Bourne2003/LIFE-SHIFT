@@ -6,7 +6,8 @@ A browser-first life simulation / RPG where NPCs live their own lives, remember 
 world changes in response to what you do. Runs on desktop, tablet and mobile browsers with no
 install.
 
-**Status:** Milestone 1 — _Browser Game Bootstrap_ — complete. See [docs/GDD/vision.md](docs/GDD/vision.md)
+**Status:** Milestone 2 — _Playable City_ — complete: walk around, talk to NPCs, finish
+_Mina's Recipe_. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
 ## Quick start
@@ -18,8 +19,9 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Controls: **WASD / arrow keys** on desktop; on touch screens, **drag on the left side** of the
-screen for a virtual joystick.
+Controls: **WASD / arrow keys** to move and **E / Space / Enter** to talk on desktop (arrow keys
+pick dialogue choices). On touch screens, **drag on the left side** of the screen for a virtual
+joystick, tap **Talk** near someone, and tap the dialogue box or a choice to continue.
 
 ### Play on another device on your network
 
@@ -45,12 +47,13 @@ npm run dev:lan -w @life-shift/web   # prints http://192.168.x.x:5173
 ```
 apps/web/          Phaser 3 + Vite browser client
 packages/shared/   Engine-agnostic types, constants and pure game logic (client + future server)
+packages/game-data/ Content as data: NPCs, dialogue, quests
 docs/GDD/          Game design: vision, scope, milestones
 docs/architecture/ How the code is organised
 docs/decisions/    Architecture Decision Records (ADRs)
 ```
 
-`apps/server`, `packages/protocol` and `packages/game-data` are planned and will be added in the
+`apps/server` and `packages/protocol` are planned and will be added in the
 milestones that first need them.
 
 ## Configuration

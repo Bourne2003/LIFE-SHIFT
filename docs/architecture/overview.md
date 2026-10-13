@@ -7,10 +7,10 @@ npm workspaces monorepo (see [ADR-002](../decisions/ADR-002-stack-and-monorepo.m
 | Package              | Runs in        | Contains                                                         |
 | -------------------- | -------------- | ---------------------------------------------------------------- |
 | `apps/web`           | Browser        | Phaser scenes, entities, input devices, UI                       |
-| `packages/shared`    | Browser + Node | Types, constants, pure rules (movement math). No Phaser, no DOM. |
+| `packages/shared`    | Browser + Node | Types, constants, pure rules (movement, quests, dialogue).       |
 | `apps/server`        | Node (planned) | Authoritative multiplayer server — milestone 4                   |
 | `packages/protocol`  | Both (planned) | Client/server message schemas — milestone 4                      |
-| `packages/game-data` | Both (planned) | NPC, dialogue, quest and item data — milestone 2                 |
+| `packages/game-data` | Browser + Node | NPC, dialogue and quest data (items later). Data only, no logic. |
 
 Rule: browser code may import `shared`, `protocol`, `game-data`; it must never import
 `apps/server`. Internal packages export TypeScript source directly (no build step).
@@ -22,21 +22,24 @@ main.ts                 entry: creates the game; installs the debug API in dev b
 config.ts               VITE_ env → typed ClientConfig
 game/
   createGame.ts         Phaser.Game config (RESIZE scale mode, arcade physics, scene list)
-  services.ts           GameServices container, stored in the game registry
+  services.ts           GameServices container (input, session), stored in the game registry
+  session.ts            GameSession: quest log, NPC in reach, open conversation (no Phaser)
   resize.ts             ResizeObserver workaround for a Phaser rotation bug
   viewport.ts           camera zoom for any screen size (pure, unit tested)
   assets.ts             TextureKeys — the only way gameplay refers to art
   sceneKeys.ts
-  debug.ts              window.__LIFE_SHIFT__ read-only snapshot for e2e tests (dev only)
+  debug.ts              window.__LIFE_SHIFT__ snapshots + teleport hook for e2e tests (dev only)
 scenes/
   BootScene             prepares (currently generates) placeholder textures
-  WorldScene            world, physics bounds, player, camera follow + zoom
-  UIScene               screen-space overlay: touch joystick, hints; later HUD/dialogue/menus
+  WorldScene            world, obstacles, NPCs, player, camera; feeds actions to the session
+  UIScene               screen-space overlay: joystick, Talk button, prompt, dialogue, quest HUD
+ui/DialogueBox.ts       conversation panel (view only; reports taps via callbacks)
 entities/Player.ts      physics body at the feet; turns a MoveIntent into velocity/facing/state
 input/
-  InputSource.ts        interface: getMoveIntent()
-  InputManager.ts       merges all sources into one intent
-  KeyboardInputSource   WASD + arrows
+  InputSource.ts        interface: getMoveIntent(), optional consumeActions()
+  InputManager.ts       merges all sources into one intent and one set of actions
+  KeyboardInputSource   WASD + arrows; E/Space/Enter interact
+  TouchActionButton     on-screen Talk button (touch devices)
   TouchJoystick         floating joystick on the left 60% of the screen (touch pointers only)
   joystickMath.ts       deadzone/ramp maths (pure, unit tested)
 ```
@@ -51,6 +54,24 @@ Joystick ─┼─► InputManager.getMoveIntent() ─► Player.applyIntent() �
 
 Adding a device = implementing `InputSource` and registering it. Gameplay never changes.
 
+Discrete presses (`interact`, `navUp`, `navDown`) travel the same way: each source queues them and
+`InputManager.consumeActions()` drains every source once per frame. Sources queue presses from
+key-down events rather than polling, so a tap shorter than one frame is never lost.
+
+### Story flow (interaction, dialogue, quests)
+
+```
+WorldScene ──nearest NPC in range──► GameSession ◄──taps── UIScene (DialogueBox, Talk button)
+           ──interact / nav actions──►    │  uses shared rules: selectNpcDialogue,
+                                          │  beginDialogue / advanceDialogue, quest steps
+                                          └──events (changed, questStarted/Completed)──► UIScene
+```
+
+Content lives in `packages/game-data` (see [ADR-003](../decisions/ADR-003-content-as-typed-data.md)).
+An NPC lists dialogue options guarded by quest conditions (first match wins); dialogue nodes and
+choices carry effects (`startQuest`, `completeStep`). Quest progress is a plain `QuestLog` object,
+ready for save/load in milestone 3. While a conversation is open the player does not move.
+
 ### Scenes and scaling
 
 The canvas always fills its container (`Scale.RESIZE`). Instead of letterboxing, the world
@@ -63,5 +84,6 @@ so controls keep a constant physical size.
 - **Unit (Vitest, Node):** everything pure — `packages/shared/test`, `apps/web/src/**/*.test.ts`.
   Test files must not import Phaser.
 - **Browser (Playwright):** `apps/web/e2e`, desktop Chrome and emulated Pixel 7. Gameplay tests
-  read state through the dev-only debug API; one test boots the production build and fails on any
+  read state through the dev-only debug API (and position the player with its `teleport` hook,
+  since headless frame rates make keyboard positioning imprecise); one test boots the production build and fails on any
   console error.
