@@ -26,6 +26,9 @@ export interface UiStrings {
   bought(item: string, price: number): string;
   cannotAfford(item: string): string;
   moneyReceived(amount: number): string;
+  clock(day: number, time: string): string;
+  readonly weatherClear: string;
+  readonly weatherRain: string;
 }
 
 export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
@@ -53,6 +56,9 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     bought: (item, price) => `ซื้อ${item}แล้ว (−฿${price})`,
     cannotAfford: (item) => `เงินไม่พอซื้อ${item}`,
     moneyReceived: (n) => `ได้รับเงิน ฿${n}`,
+    clock: (day, time) => `วันที่ ${day} · ${time} น.`,
+    weatherClear: 'อากาศแจ่มใส',
+    weatherRain: 'ฝนตก',
   },
   en: {
     moveHintKeyboard: 'WASD / Arrow keys to move · E to talk',
@@ -78,5 +84,8 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     bought: (item, price) => `Bought ${item} (−฿${price})`,
     cannotAfford: (item) => `Not enough money for ${item}`,
     moneyReceived: (n) => `Received ฿${n}`,
+    clock: (day, time) => `Day ${day} · ${time}`,
+    weatherClear: 'Clear',
+    weatherRain: 'Rain',
   },
 };

@@ -37,6 +37,7 @@ scenes/
   UIScene               screen-space overlay: joystick, Talk button, prompt, dialogue, quest HUD
 ui/DialogueBox.ts       conversation panel (view only; reports taps via callbacks)
 ui/ListPanel.ts         modal list used by the shop and the bag (view only)
+ui/RainEffect.ts        screen-space rain streaks + grey wash
 ui/wrapText.ts          language-aware line wrapping (Thai has no spaces between words)
 ui/style.ts             shared text style (bundled Noto Sans Thai) + setSmartWrap()
 i18n/
@@ -77,13 +78,19 @@ WorldScene ──nearest NPC in range──► GameSession ◄──taps── U
 ```
 
 All persistent progress is one plain `GameState` (`packages/shared/src/state`): the quest log,
-world **flags**, per-NPC **memory** (how often you talked), **money** (baht) and the
-**inventory**. Content tests it with conditions
-(`{ quest, status }`, `{ flag }`, `{ npc, met }`, `{ item, count }`) and changes it with effects
+world **flags**, per-NPC **memory** (how often you talked), **money** (baht), the
+**inventory** and the world **clock** (day + minute; weather is derived from the day, so it is
+deterministic and never saved). Content tests it with conditions
+(`{ quest, status }`, `{ flag }`, `{ npc, met }`, `{ item, count }`, `{ phase }`, `{ weather }`) and changes it with effects
 (`startQuest`, `completeStep`, `setFlag`, `changeItem`, `changeMoney`). A dialogue choice can open
 a shop (`opensShop`); buying is the pure `buyItem` rule, so a server can enforce it later. A quest's `onComplete` effects are its consequence for the world, e.g.
 Mina's Recipe sets `somchai-stall-open`, which shows the noodle-stall **world prop** and changes
-what several NPCs say. Saves are versioned (see
+what several NPCs say.
+
+Time runs in `GameSession.tick()` (1 in-game minute per real second, paused while talking or
+shopping). Crossing into a new phase (morning/day/evening/night) or day counts as a state change,
+so time-dependent props (park lanterns) and dialogue update and the game autosaves. Night is a
+world-space overlay with additive-blended light glows above it; rain is drawn in the UI scene. Saves are versioned (see
 [ADR-005](../decisions/ADR-005-save-format.md)).
 
 Content lives in `packages/game-data` (see [ADR-003](../decisions/ADR-003-content-as-typed-data.md)).

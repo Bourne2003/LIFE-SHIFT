@@ -46,8 +46,9 @@ persistent world. Multiplayer stays behind `VITE_MULTIPLAYER_ENABLED` until sing
 stable.
 
 Inventory and a basic shop economy (money, Aunt Daeng's store, quest rewards) are in, completing
-the MVP definition below. Before milestone 4 the vertical slice still needs: day/night, weather,
-more city locations, ~10 NPCs and ~5 quests (currently 6 NPCs, 2 quests).
+the MVP definition below. Day/night (24-minute days, lit park lanterns) and clear/rain weather are
+in too. Before milestone 4 the vertical slice still needs more city locations (player home, market,
+restaurant, park, hidden place, landmark), ~10 NPCs and ~5 quests (currently 6 NPCs, 2 quests).
 
 ## MVP definition (end of milestone 3 + shop)
 

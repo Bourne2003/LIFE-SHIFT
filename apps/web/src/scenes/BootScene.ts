@@ -19,6 +19,7 @@ export class BootScene extends Phaser.Scene {
     this.makeTileTexture(TextureKeys.Road, 0x8a8577, 0x7d796c);
     this.makeTileTexture(TextureKeys.Building, 0x6a4d39, 0x5b422f);
     this.makeNoodleStallTexture();
+    this.makeLanternTextures();
 
     this.scene.start(SceneKeys.World);
     this.scene.launch(SceneKeys.UI);
@@ -68,6 +69,29 @@ export class BootScene extends Phaser.Scene {
       .fillCircle(s / 2 + 3, s - 44, 3); // steam
     g.generateTexture(TextureKeys.NoodleStall, s, s);
     g.destroy();
+  }
+
+  /** Park lantern on a post, plus a soft radial glow drawn over the night overlay. */
+  private makeLanternTextures(): void {
+    const g = this.make.graphics({}, false);
+    g.fillStyle(0x000000, 0.2).fillEllipse(16, 30, 14, 4);
+    g.fillStyle(0x3b3b3b).fillRect(14, 10, 4, 20); // post
+    g.fillStyle(0x8c2f1f).fillRoundedRect(9, 2, 14, 12, 4); // paper lantern
+    g.fillStyle(0xffc35c).fillRoundedRect(11, 4, 10, 8, 3);
+    g.generateTexture(TextureKeys.Lantern, TILE_SIZE, TILE_SIZE);
+    g.destroy();
+
+    const size = 128;
+    const canvas = this.textures.createCanvas(TextureKeys.LightGlow, size, size);
+    if (!canvas) return;
+    const ctx = canvas.getContext();
+    const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    grad.addColorStop(0, 'rgba(255, 214, 140, 0.9)');
+    grad.addColorStop(0.4, 'rgba(255, 180, 90, 0.35)');
+    grad.addColorStop(1, 'rgba(255, 160, 60, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    canvas.refresh();
   }
 
   private makeTileTexture(key: string, base: number, detail: number): void {

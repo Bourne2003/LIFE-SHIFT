@@ -2,12 +2,13 @@ import Phaser from 'phaser';
 import { SceneKeys } from '../game/sceneKeys';
 import { getServices } from '../game/services';
 import type { GameSession, SessionEvent } from '../game/session';
-import type { LocalizedText } from '@life-shift/shared';
+import { formatClock, type LocalizedText } from '@life-shift/shared';
 import type { LocaleService } from '../i18n/LocaleService';
 import { TouchActionButton } from '../input/TouchActionButton';
 import { TouchJoystick } from '../input/TouchJoystick';
 import { DialogueBox } from '../ui/DialogueBox';
 import { ListPanel, PANEL_DEPTH } from '../ui/ListPanel';
+import { RainEffect } from '../ui/RainEffect';
 import { TEXT_STYLE, setSmartWrap } from '../ui/style';
 
 const MARGIN = 16;
@@ -34,6 +35,8 @@ export class UIScene extends Phaser.Scene {
   private tracker!: Phaser.GameObjects.Text;
   private dialogue!: DialogueBox;
   private money!: Phaser.GameObjects.Text;
+  private clock!: Phaser.GameObjects.Text;
+  private rain!: RainEffect;
   private bagButton!: Phaser.GameObjects.Text;
   private shopPanel!: ListPanel;
   private bagPanel!: ListPanel;
@@ -77,6 +80,8 @@ export class UIScene extends Phaser.Scene {
     this.i18n = i18n;
     this.touch = this.sys.game.device.input.touch;
     const cleanups: (() => void)[] = [];
+    // Weather sits under every HUD element.
+    this.rain = new RainEffect(this, -1);
 
     cleanups.push(input.add(new TouchJoystick(this)));
     if (this.touch) {
@@ -95,6 +100,7 @@ export class UIScene extends Phaser.Scene {
     this.money = this.add
       .text(0, MARGIN, '', { ...LABEL_STYLE, fontStyle: 'bold' })
       .setOrigin(1, 0);
+    this.clock = this.add.text(0, 0, '', LABEL_STYLE).setOrigin(1, 0);
 
     this.prompt = this.add.text(0, 0, '', LABEL_STYLE).setOrigin(0.5, 1).setVisible(false);
     this.tracker = setSmartWrap(
@@ -131,6 +137,7 @@ export class UIScene extends Phaser.Scene {
 
   private onSessionEvent(event: SessionEvent): void {
     if (event.type === 'changed') return this.render();
+    if (event.type === 'clockTick') return this.renderClock();
     if (event.type === 'stateChanged') return;
     const { ui } = this.i18n;
     const t = (text: LocalizedText) => this.i18n.text(text);
@@ -168,10 +175,30 @@ export class UIScene extends Phaser.Scene {
 
     this.dialogue.render(session.conversation);
     this.money.setText(ui.money(session.state.money));
+    this.renderClock(false);
     this.bagButton.setText(ui.bagButton);
     this.renderShop();
     this.renderBag();
     this.layout();
+  }
+
+  /** Day, time and weather under the money; also starts or stops the rain. */
+  private renderClock(relayout = true): void {
+    const { ui } = this.i18n;
+    const env = this.session.environment;
+    const weather = env.weather === 'rain' ? ui.weatherRain : ui.weatherClear;
+    this.clock.setText(`${ui.clock(env.day, formatClock(env.minute))} · ${weather}`);
+    this.rain.setActive(env.weather === 'rain');
+    if (relayout) this.layout();
+  }
+
+  /** Whether rain is being drawn (tests). */
+  get raining(): boolean {
+    return this.rain.isRaining;
+  }
+
+  override update(_time: number, deltaMs: number): void {
+    this.rain.update(deltaMs);
   }
 
   private renderShop(): void {
@@ -221,11 +248,25 @@ export class UIScene extends Phaser.Scene {
   private layout(): void {
     const { width, height } = this.scale;
     this.bagButton.setPosition(this.languageButton.x + this.languageButton.width + 8, MARGIN);
-    const below = this.languageButton.y + this.languageButton.height + 8;
-    this.hint?.setPosition(MARGIN, below).setWordWrapWidth(width * 0.55);
     this.prompt.setPosition(width / 2, height - MARGIN * 2);
     this.money.setPosition(width - MARGIN, MARGIN);
-    this.tracker.setPosition(width - MARGIN, MARGIN + this.money.height + 8);
+    this.clock.setPosition(width - MARGIN, MARGIN + this.money.height + 8);
+    let trackerTop = this.clock.y + this.clock.height + 8;
+
+    // The start-up hint sits under the buttons, beside the clock when there is room; on narrow
+    // screens it goes below the clock instead, and the quest tracker below the hint.
+    if (this.hint) {
+      const below = this.languageButton.y + this.languageButton.height + 8;
+      const besideClock = width - MARGIN - this.clock.width - MARGIN * 3;
+      if (besideClock >= 240) {
+        this.hint.setPosition(MARGIN, below).setWordWrapWidth(Math.min(width * 0.55, besideClock));
+      } else {
+        // Minus the label's horizontal padding (10 px each side).
+        this.hint.setPosition(MARGIN, trackerTop).setWordWrapWidth(width - MARGIN * 2 - 20);
+        trackerTop = this.hint.y + this.hint.height + 8;
+      }
+    }
+    this.tracker.setPosition(width - MARGIN, trackerTop);
     const languageRight = this.bagButton.x + this.bagButton.width;
     this.tracker.setWordWrapWidth(Math.min(320, width - languageRight - MARGIN * 2));
 
@@ -250,6 +291,7 @@ export class UIScene extends Phaser.Scene {
         onComplete: () => {
           hint.destroy();
           this.hint = null;
+          this.layout();
         },
       });
     });

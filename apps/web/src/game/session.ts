@@ -2,7 +2,11 @@ import {
   advanceDialogue,
   beginDialogue,
   INITIAL_STATE,
+  advanceClock,
   buyItem,
+  darkness,
+  dayPhase,
+  weatherForDay,
   currentStep,
   isPropVisible,
   reconcileState,
@@ -14,7 +18,10 @@ import {
   type LocalizedText,
   type NpcDef,
   type QuestLog,
+  type DayPhase,
+  type GameClock,
   type ShopDef,
+  type Weather,
   type WorldPropDef,
 } from '@life-shift/shared';
 
@@ -57,6 +64,16 @@ export interface InventoryEntry {
   readonly count: number;
 }
 
+/** Time and weather as the world should look right now. */
+export interface EnvironmentView {
+  readonly day: number;
+  readonly minute: number;
+  readonly phase: DayPhase;
+  readonly weather: Weather;
+  /** Night overlay opacity, 0 by day. */
+  readonly darkness: number;
+}
+
 export type SessionEvent =
   /** Anything the UI shows changed (nearby NPC, conversation, game state). */
   | { readonly type: 'changed' }
@@ -69,6 +86,8 @@ export type SessionEvent =
     }
   | { readonly type: 'purchased'; readonly item: LocalizedText; readonly price: number }
   | { readonly type: 'cannotAfford'; readonly item: LocalizedText }
+  /** The in-game clock passed a minute (HUD clock). */
+  | { readonly type: 'clockTick' }
   /** Money went up (e.g. a quest reward). */
   | { readonly type: 'moneyReceived'; readonly amount: number };
 
@@ -224,6 +243,40 @@ export class GameSession {
     };
   }
 
+  get environment(): EnvironmentView {
+    const { day, minute } = this._state.clock;
+    return {
+      day,
+      minute,
+      phase: dayPhase(minute),
+      weather: weatherForDay(day),
+      darkness: darkness(minute),
+    };
+  }
+
+  /**
+   * Lets world time pass. Time stands still while talking or shopping. Crossing into a new time
+   * of day or a new day counts as a state change (lanterns light up, NPCs say other things).
+   */
+  tick(realSeconds: number): void {
+    if (this.convo || this.shop) return;
+    const before = this._state.clock;
+    const clock = advanceClock(before, realSeconds);
+    if (clock === before) return;
+    this._state = { ...this._state, clock };
+    if (Math.floor(clock.minute) !== Math.floor(before.minute) || clock.day !== before.day)
+      this.emit({ type: 'clockTick' });
+    if (clock.day !== before.day || dayPhase(clock.minute) !== dayPhase(before.minute))
+      this.commit(this._state, before);
+  }
+
+  /** Sets the clock directly (debugging and tests). */
+  setClock(clock: GameClock): void {
+    const before = this._state;
+    this.commit({ ...before, clock }, before.clock);
+    this.emit({ type: 'clockTick' });
+  }
+
   /** Active quests with the description of their current step, for the HUD. */
   get trackedQuests(): TrackedQuest[] {
     return Object.values(this.content.quests).flatMap((quest) => {
@@ -303,9 +356,12 @@ export class GameSession {
     this.commit(state);
   }
 
-  /** Replaces the game state and announces what changed. */
-  private commit(state: GameState): void {
-    const before = this._state;
+  /**
+   * Replaces the game state and announces what changed. `clockBefore` marks a change that
+   * happened through the clock, where the state object was already updated in place.
+   */
+  private commit(state: GameState, clockBefore?: GameClock): void {
+    const before = clockBefore ? { ...state, clock: clockBefore } : this._state;
     this._state = state;
     this.emit({ type: 'changed' });
     if (state === before) return;

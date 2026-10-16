@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONTENT } from '@life-shift/game-data';
+import { START_CLOCK, weatherForDay } from '@life-shift/shared';
 import { GameSession, type SessionEvent } from './session';
 
 function finish(session: GameSession): void {
@@ -107,6 +108,7 @@ describe('GameSession', () => {
       npcs: { mina: { talks: 3 } },
       money: 10,
       inventory: { 'removed-item': 1 },
+      clock: START_CLOCK,
     });
     expect(session.state.inventory).toEqual({}); // unknown items dropped
     expect(Object.keys(session.quests)).toEqual(['minas-recipe']);
@@ -154,6 +156,7 @@ describe('GameSession', () => {
       npcs: {},
       money: 0,
       inventory: { 'jasmine-garland': 1 },
+      clock: START_CLOCK,
     });
     expect(session.inventory.map((e) => [e.item, e.count])).toEqual([['jasmine-garland', 1]]);
     const received: number[] = [];
@@ -167,5 +170,35 @@ describe('GameSession', () => {
     expect(session.inventoryOpen).toBe(true);
     session.toggleInventory();
     expect(session.inventoryOpen).toBe(false);
+  });
+
+  it('lets time pass, but not while talking, and reports new phases as state changes', () => {
+    const session = new GameSession(CONTENT);
+    const events: string[] = [];
+    session.on((e) => events.push(e.type));
+    session.tick(90); // 08:00 -> 09:30
+    expect(session.environment).toMatchObject({ day: 1, minute: 9 * 60 + 30, phase: 'morning' });
+    expect(events).toContain('clockTick');
+    expect(events).not.toContain('stateChanged');
+
+    session.tick(60); // 10:30: morning -> day
+    expect(session.environment.phase).toBe('day');
+    expect(events).toContain('stateChanged');
+
+    session.talkTo('alex');
+    const frozen = session.environment.minute;
+    session.tick(120);
+    expect(session.environment.minute).toBe(frozen);
+  });
+
+  it('can jump the clock and exposes weather and darkness', () => {
+    const session = new GameSession(CONTENT);
+    session.setClock({ day: 1, minute: 23 * 60 });
+    expect(session.environment.phase).toBe('night');
+    expect(session.environment.darkness).toBeGreaterThan(0);
+    expect(session.visibleProps.map((p) => p.kind)).toContain('lantern');
+    session.setClock({ day: 5, minute: 12 * 60 });
+    expect(session.environment.weather).toBe(weatherForDay(5));
+    expect(session.environment.darkness).toBe(0);
   });
 });

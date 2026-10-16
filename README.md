@@ -8,7 +8,9 @@ install.
 
 **Status:** Milestone 3 — _World Memory_ — complete: finishing _Mina's Recipe_ opens a noodle
 stall in the city, NPCs remember you, and progress is saved automatically on the device. The MVP
-economy is in: earn baht from quests, shop at Aunt Daeng's store, and check your bag. See [docs/GDD/vision.md](docs/GDD/vision.md)
+economy is in: earn baht from quests, shop at Aunt Daeng's store, and check your bag. Days pass
+(one in-game day is 24 real minutes): nights are dark, the park lanterns light up, and some days it
+rains — and people notice. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
 ## Quick start
