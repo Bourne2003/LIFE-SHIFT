@@ -1,5 +1,13 @@
 import { changeItem, itemCount, type Inventory } from '../items/items';
 import { completeStep, currentStep, questStatus, startQuest } from '../quests/quests';
+import {
+  START_CLOCK,
+  dayPhase,
+  weatherForDay,
+  type DayPhase,
+  type GameClock,
+  type Weather,
+} from '../world/time';
 import type { QuestDef, QuestLog, QuestStatus } from '../quests/quests';
 
 /** What an NPC remembers about the player. */
@@ -20,6 +28,8 @@ export interface GameState {
   /** Baht. Never negative. */
   readonly money: number;
   readonly inventory: Inventory;
+  /** World time; weather follows from the day. */
+  readonly clock: GameClock;
 }
 
 /** Money a new game starts with. */
@@ -31,6 +41,7 @@ export const INITIAL_STATE: GameState = Object.freeze({
   npcs: {},
   money: STARTING_MONEY,
   inventory: {},
+  clock: START_CLOCK,
 });
 
 /** A fact about the game state that content can test. */
@@ -42,7 +53,11 @@ export type StoryCondition =
   /** The player has (or has not) talked to this NPC before. */
   | { readonly npc: string; readonly met: boolean }
   /** The player carries at least `count` (default 1) of the item — or, with `has: false`, fewer. */
-  | { readonly item: string; readonly count?: number; readonly has?: boolean };
+  | { readonly item: string; readonly count?: number; readonly has?: boolean }
+  /** It is currently one of these times of day. */
+  | { readonly phase: readonly DayPhase[] }
+  /** Today's weather is this. */
+  | { readonly weather: Weather };
 
 /** A change to game state triggered by content (dialogue, quest completion). */
 export type StoryEffect =
@@ -66,6 +81,8 @@ export function conditionHolds(state: GameState, c: StoryCondition): boolean {
     return c.step === undefined || currentStep(state.quests, c.quest) === c.step;
   }
   if ('flag' in c) return (state.flags[c.flag] ?? false) === (c.is ?? true);
+  if ('phase' in c) return c.phase.includes(dayPhase(state.clock.minute));
+  if ('weather' in c) return weatherForDay(state.clock.day) === c.weather;
   if ('item' in c) return itemCount(state.inventory, c.item) >= (c.count ?? 1) === (c.has ?? true);
   return hasMet(state, c.npc) === c.met;
 }

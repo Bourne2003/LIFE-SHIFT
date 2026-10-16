@@ -7,7 +7,7 @@ import { allHold, type GameState, type StoryCondition } from '../state/gameState
 export interface WorldPropDef {
   readonly id: string;
   /** Art key; the client maps it to a texture. */
-  readonly kind: 'noodle-stall';
+  readonly kind: 'noodle-stall' | 'lantern';
   /** Top-left tile and size in tiles. */
   readonly xTiles: number;
   readonly yTiles: number;

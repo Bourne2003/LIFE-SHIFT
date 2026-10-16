@@ -13,3 +13,4 @@ export * from './world/interaction';
 export * from './world/npcs';
 export * from './world/obstacles';
 export * from './world/props';
+export * from './world/time';

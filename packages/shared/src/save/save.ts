@@ -1,6 +1,7 @@
 import type { Vec2 } from '../math/vector';
 import type { QuestLog, QuestProgress } from '../quests/quests';
 import type { Inventory, ItemCatalog } from '../items/items';
+import { MINUTES_PER_DAY, START_CLOCK, type GameClock } from '../world/time';
 import {
   STARTING_MONEY,
   type GameState,
@@ -9,7 +10,7 @@ import {
 } from '../state/gameState';
 
 /** Bump when the save shape changes, and add a migration from the previous version. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface SaveData {
   readonly version: number;
@@ -38,6 +39,12 @@ const MIGRATIONS: Readonly<
     ...raw,
     version: 2,
     state: { ...(isRecord(raw.state) ? raw.state : {}), money: STARTING_MONEY, inventory: {} },
+  }),
+  // v3 added the world clock: older saves resume on day 1 at 08:00.
+  2: (raw) => ({
+    ...raw,
+    version: 3,
+    state: { ...(isRecord(raw.state) ? raw.state : {}), clock: START_CLOCK },
   }),
 };
 
@@ -83,6 +90,7 @@ export function parseSave(json: string): ParseResult {
         npcs: readNpcs(state.npcs),
         money: readMoney(state.money),
         inventory: readInventory(state.inventory),
+        clock: readClock(state.clock),
       },
       player: readPoint(data.player),
     },
@@ -128,6 +136,14 @@ function readInventory(raw: unknown): Inventory {
   for (const [id, n] of Object.entries(raw))
     if (typeof n === 'number' && Number.isInteger(n) && n > 0) out[id] = n;
   return out;
+}
+
+function readClock(raw: unknown): GameClock {
+  if (!isRecord(raw)) return START_CLOCK;
+  const { day, minute } = raw;
+  const dayOk = typeof day === 'number' && Number.isInteger(day) && day >= 1;
+  const minuteOk = typeof minute === 'number' && minute >= 0 && minute < MINUTES_PER_DAY;
+  return dayOk && minuteOk ? { day, minute } : START_CLOCK;
 }
 
 function readPoint(raw: unknown): Vec2 | null {

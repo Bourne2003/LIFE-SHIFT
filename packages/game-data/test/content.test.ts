@@ -11,6 +11,7 @@ import {
   recordTalk,
   selectNpcDialogue,
   validateContent,
+  weatherForDay,
   type GameState,
 } from '@life-shift/shared';
 import { CONTENT, DIALOGUES, NPCS, PROPS, QUESTS, SHOPS } from '../src';
@@ -124,5 +125,31 @@ describe('game content', () => {
     const s = talk('alex', INITIAL_STATE);
     expect(s.npcs.alex).toEqual({ talks: 1 });
     expect(dialogueOf('alex', s)).toBe('alex-again');
+  });
+
+  it('the city reacts to time of day and weather', () => {
+    const at = (day: number, hour: number): GameState => ({
+      ...INITIAL_STATE,
+      clock: { day, minute: hour * 60 },
+    });
+    const lanterns = PROPS.filter((p) => p.kind === 'lantern');
+    expect(lanterns.length).toBeGreaterThan(0);
+    for (const l of lanterns) {
+      expect(isPropVisible(l, at(1, 12)), l.id).toBe(false);
+      expect(isPropVisible(l, at(1, 21)), l.id).toBe(true);
+    }
+
+    const done: GameState = {
+      ...at(1, 21),
+      quests: { 'pims-garland': { status: 'completed' } },
+    };
+    expect(dialogueOf('pim', done)).toBe('pim-night');
+    expect(dialogueOf('pim', { ...done, clock: { day: 1, minute: 12 * 60 } })).toBe('pim-after');
+
+    const rainyDay = Array.from({ length: 50 }, (_, i) => i + 2).find(
+      (d) => weatherForDay(d) === 'rain',
+    )!;
+    expect(dialogueOf('nida', at(rainyDay, 12))).toBe('nida-rain');
+    expect(dialogueOf('nida', at(1, 12))).toBe('nida-greeting');
   });
 });

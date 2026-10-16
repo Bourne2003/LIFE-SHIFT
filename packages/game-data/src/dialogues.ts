@@ -80,6 +80,14 @@ const list: readonly DialogueDef[] = [
     th: 'เคยเห็นสวนสาธารณะตอนกลางคืนไหม? โคมไฟสวยมากเลยนะ',
     en: 'Have you seen the park at night? The lanterns are beautiful.',
   }),
+  line('pim-night', {
+    th: 'เห็นไหม โคมไฟในสวนเปิดแล้ว สวยอย่างที่บอกใช่ไหมล่ะ',
+    en: 'See? The park lanterns are lit. Beautiful, just like I said.',
+  }),
+  line('nida-rain', {
+    th: 'ฝนตกอีกแล้ว… ร้านคงเปิดช้า ไปหลบฝนใต้ชายคากันเถอะ',
+    en: 'Rain again… the shop will open late. Let’s wait under the eaves.',
+  }),
   {
     id: 'daeng-hello',
     start: 'hello',

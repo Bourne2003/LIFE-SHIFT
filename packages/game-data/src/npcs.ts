@@ -50,6 +50,7 @@ export const NPCS: readonly NpcDef[] = [
     xTiles: 32,
     yTiles: 12,
     dialogue: [
+      { when: [{ weather: 'rain' }], dialogue: 'nida-rain' },
       { when: [{ flag: 'somchai-stall-open' }], dialogue: 'nida-stall' },
       { dialogue: 'nida-greeting' },
     ],
@@ -65,6 +66,10 @@ export const NPCS: readonly NpcDef[] = [
         dialogue: 'pim-receive',
       },
       { when: [{ quest: 'pims-garland', status: 'active' }], dialogue: 'pim-waiting' },
+      {
+        when: [{ quest: 'pims-garland', status: 'completed' }, { phase: ['evening', 'night'] }],
+        dialogue: 'pim-night',
+      },
       { when: [{ quest: 'pims-garland', status: 'completed' }], dialogue: 'pim-after' },
       { dialogue: 'pim-ask' },
     ],

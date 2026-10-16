@@ -54,7 +54,10 @@ export function validateContent(content: GameContent): string[] {
       if ('quest' in c) checkQuestRef(where, c.quest, c.step);
       else if ('flag' in c) flagsTested.push({ where, flag: c.flag });
       else if ('item' in c) checkItemRef(where, c.item);
-      else if (!npcIdSet.has(c.npc)) problems.push(`${where}: unknown npc "${c.npc}"`);
+      else if ('phase' in c) {
+        if (c.phase.length === 0) problems.push(`${where}: empty phase list`);
+      } else if ('npc' in c && !npcIdSet.has(c.npc))
+        problems.push(`${where}: unknown npc "${c.npc}"`);
     }
   };
 
