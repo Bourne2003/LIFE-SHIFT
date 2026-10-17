@@ -4,6 +4,7 @@ import type { ItemCatalog } from '../items/items';
 import type { ShopCatalog } from '../shops/shops';
 import type { QuestCatalog, StoryCondition, StoryEffect } from '../state/gameState';
 import type { NpcDef } from '../world/npcs';
+import { visitedFlag, type LocationDef } from '../world/locations';
 import type { WorldPropDef } from '../world/props';
 
 export interface GameContent {
@@ -13,6 +14,7 @@ export interface GameContent {
   readonly props: readonly WorldPropDef[];
   readonly items: ItemCatalog;
   readonly shops: ShopCatalog;
+  readonly locations: readonly LocationDef[];
 }
 
 /**
@@ -22,9 +24,10 @@ export interface GameContent {
  */
 export function validateContent(content: GameContent): string[] {
   const problems: string[] = [];
-  const { npcs, dialogues, quests, props, items, shops } = content;
+  const { npcs, dialogues, quests, props, items, shops, locations } = content;
   const npcIdSet = new Set(npcs.map((n) => n.id));
-  const flagsSet = new Set<string>();
+  // Visiting a location sets its flag automatically.
+  const flagsSet = new Set<string>(locations.map((l) => visitedFlag(l.id)));
   const flagsTested: { where: string; flag: string }[] = [];
 
   const checkText = (where: string, text: LocalizedText | undefined) => {
@@ -112,6 +115,7 @@ export function validateContent(content: GameContent): string[] {
         problems.push(`${where}: unknown dialogue "${option.dialogue}"`);
       checkConditions(where, option.when);
     }
+    checkConditions(`${where} presentWhen`, npc.presentWhen);
   }
 
   const propIds = new Set<string>();
@@ -120,6 +124,15 @@ export function validateContent(content: GameContent): string[] {
     if (propIds.has(prop.id)) problems.push(`${where}: duplicate id`);
     propIds.add(prop.id);
     checkConditions(where, prop.when);
+  }
+
+  const locationIds = new Set<string>();
+  for (const loc of locations) {
+    const where = `location "${loc.id}"`;
+    if (locationIds.has(loc.id)) problems.push(`${where}: duplicate id`);
+    locationIds.add(loc.id);
+    checkText(`${where} name`, loc.name);
+    if (loc.widthTiles <= 0 || loc.heightTiles <= 0) problems.push(`${where}: empty area`);
   }
 
   for (const [key, item] of Object.entries(items)) {

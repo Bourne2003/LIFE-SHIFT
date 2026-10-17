@@ -29,6 +29,7 @@ export interface UiStrings {
   clock(day: number, time: string): string;
   readonly weatherClear: string;
   readonly weatherRain: string;
+  secretFound(place: string): string;
 }
 
 export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
@@ -59,6 +60,7 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     clock: (day, time) => `วันที่ ${day} · ${time} น.`,
     weatherClear: 'อากาศแจ่มใส',
     weatherRain: 'ฝนตก',
+    secretFound: (place) => `ค้นพบสถานที่ลับ: ${place}`,
   },
   en: {
     moveHintKeyboard: 'WASD / Arrow keys to move · E to talk',
@@ -87,5 +89,6 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     clock: (day, time) => `Day ${day} · ${time}`,
     weatherClear: 'Clear',
     weatherRain: 'Rain',
+    secretFound: (place) => `Secret place found: ${place}`,
   },
 };

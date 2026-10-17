@@ -6,6 +6,7 @@ import {
   buyItem,
   advanceDialogue,
   beginDialogue,
+  isNpcPresent,
   isPropVisible,
   questStatus,
   recordTalk,
@@ -14,7 +15,7 @@ import {
   weatherForDay,
   type GameState,
 } from '@life-shift/shared';
-import { CONTENT, DIALOGUES, NPCS, PROPS, QUESTS, SHOPS } from '../src';
+import { CONTENT, DIALOGUES, LOCATIONS, NPCS, PROPS, QUESTS, SHOPS } from '../src';
 
 type Rect = { x: number; y: number; w: number; h: number };
 const overlaps = (a: Rect, b: Rect) =>
@@ -63,10 +64,9 @@ describe('game content', () => {
         npc.id,
       ).toBe(false);
     for (const prop of PROPS) {
-      expect(
-        obstacleRects.some((o) => overlaps(propRect(prop), o)),
-        prop.id,
-      ).toBe(false);
+      // Props mounted on buildings must sit on one; all others must stay off them.
+      const onObstacle = obstacleRects.some((o) => overlaps(propRect(prop), o));
+      expect(onObstacle, prop.id).toBe(!!prop.onBuilding);
       expect(
         NPCS.some((n) => overlaps(propRect(prop), npcRect(n))),
         prop.id,
@@ -151,5 +151,83 @@ describe('game content', () => {
     )!;
     expect(dialogueOf('nida', at(rainyDay, 12))).toBe('nida-rain');
     expect(dialogueOf('nida', at(1, 12))).toBe('nida-greeting');
+  });
+
+  it('meets the vertical-slice scope: ~10 NPCs, ~5 quests, a secret place', () => {
+    expect(NPCS.length).toBeGreaterThanOrEqual(10);
+    expect(Object.keys(QUESTS).length).toBeGreaterThanOrEqual(5);
+    expect(LOCATIONS.some((l) => l.secret)).toBe(true);
+  });
+
+  it('every NPC stands in open space inside the world', () => {
+    for (const npc of NPCS) {
+      expect(npc.xTiles, npc.id).toBeGreaterThanOrEqual(0);
+      expect(npc.xTiles, npc.id).toBeLessThan(40);
+      expect(npc.yTiles, npc.id).toBeGreaterThanOrEqual(0);
+      expect(npc.yTiles, npc.id).toBeLessThan(30);
+    }
+  });
+
+  const buy = (s: GameState, item: string): GameState => {
+    const r = buyItem(s, SHOPS['daeng-store']!, item);
+    if (!r.ok) throw new Error(r.reason);
+    return r.state;
+  };
+  const isPresent = (id: string, s: GameState) =>
+    isNpcPresent(
+      NPCS.find((n) => n.id === id)!,
+      s,
+    );
+
+  it('The Stopped Clock: buy oil, fix the tower, the face lights up', () => {
+    let s = talk('chai', INITIAL_STATE);
+    expect(dialogueOf('chai', s)).toBe('chai-waiting');
+    s = talk('chai', buy(s, 'machine-oil'));
+    expect(questStatus(s.quests, 'stopped-clock')).toBe('completed');
+    expect(s.inventory).toEqual({});
+    expect(s.money).toBe(STARTING_MONEY - 25 + 30);
+    expect(
+      isPropVisible(
+        PROPS.find((p) => p.id === 'clock-tower-face')!,
+        s,
+      ),
+    ).toBe(true);
+    expect(dialogueOf('alex', s)).toBe('alex-clock');
+  });
+
+  it('The Lost Cat: Som leaves the alley and turns up next to Ton', () => {
+    let s = talk('ton', INITIAL_STATE);
+    expect(isPresent('som-alley', s)).toBe(true);
+    expect(isPresent('som-home', s)).toBe(false);
+    s = talk('som-alley', s);
+    expect(s.quests['lost-cat']).toEqual({ status: 'active', step: 'tell' });
+    expect(isPresent('som-alley', s)).toBe(false);
+    s = talk('ton', s);
+    expect(questStatus(s.quests, 'lost-cat')).toBe('completed');
+    expect(isPresent('som-home', s)).toBe(true);
+    expect(s.money).toBe(STARTING_MONEY + 20);
+  });
+
+  it("Grandma Boon's curry can only be delivered in the evening or at night", () => {
+    let s = talk('boon', INITIAL_STATE);
+    expect(s.inventory).toEqual({ 'green-curry': 1 });
+    s = talk('chai', s); // 08:00: too early
+    expect(s.inventory).toEqual({ 'green-curry': 1 });
+    expect(questStatus(s.quests, 'boons-curry')).toBe('active');
+    s = talk('chai', { ...s, clock: { day: 1, minute: 19 * 60 } });
+    expect(questStatus(s.quests, 'boons-curry')).toBe('completed');
+    expect(s.inventory).toEqual({});
+  });
+
+  it('named places do not overlap, and every NPC stands in at most one', () => {
+    const rect = (l: (typeof LOCATIONS)[number]) => ({
+      x: l.xTiles,
+      y: l.yTiles,
+      w: l.widthTiles,
+      h: l.heightTiles,
+    });
+    for (const [i, a] of LOCATIONS.entries())
+      for (const b of LOCATIONS.slice(i + 1))
+        expect(overlaps(rect(a), rect(b)), `${a.id} / ${b.id}`).toBe(false);
   });
 });

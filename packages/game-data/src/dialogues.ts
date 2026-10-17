@@ -88,6 +88,196 @@ const list: readonly DialogueDef[] = [
     th: 'ฝนตกอีกแล้ว… ร้านคงเปิดช้า ไปหลบฝนใต้ชายคากันเถอะ',
     en: 'Rain again… the shop will open late. Let’s wait under the eaves.',
   }),
+  line('alex-clock', {
+    th: 'ได้ยินไหม? หอนาฬิกาตีบอกเวลาอีกแล้ว เงียบไปตั้งหลายปี',
+    en: 'Hear that? The clock tower is chiming again. It was silent for years.',
+  }),
+
+  // Grandma Boon: a delivery that only works after dark.
+  {
+    id: 'boon-ask',
+    start: 'hello',
+    nodes: {
+      hello: {
+        text: {
+          th: 'มาแล้วเหรอหลาน ลุงชัยที่หอนาฬิกาทำงานกะดึกทุกวันจนไม่ได้กินข้าว ยายห่อแกงไว้ให้แล้ว ช่วยเอาไปให้ตอนเย็น ๆ หน่อยได้ไหม?',
+          en: 'Ah, there you are, dear. Uncle Chai at the clock tower works nights and forgets to eat. I packed him some curry — could you take it to him this evening?',
+        },
+        choices: [
+          {
+            text: { th: 'ได้ครับ/ค่ะ ยาย', en: 'Of course, Grandma.' },
+            next: 'given',
+            effects: [
+              { type: 'startQuest', quest: 'boons-curry' },
+              { type: 'changeItem', item: 'green-curry', count: 1 },
+            ],
+          },
+          { text: { th: 'ขอโทษนะยาย ตอนนี้ยังไม่ว่าง', en: 'Sorry, not right now.' } },
+        ],
+      },
+      given: {
+        text: {
+          th: 'นี่ปิ่นโตแกงเขียวหวาน ยังร้อน ๆ อยู่เลย เขาจะมาประจำหอนาฬิกาตอนเย็นนะ',
+          en: 'Here’s the green curry, still hot. He starts at the clock tower in the evening.',
+        },
+      },
+    },
+  },
+  line('boon-waiting', {
+    th: 'ลุงชัยจะอยู่ที่หอนาฬิกาตอนเย็นจนดึกนะหลาน อย่าลืมเอาแกงไปให้ล่ะ',
+    en: 'Uncle Chai is at the clock tower from evening until late. Don’t forget the curry, dear.',
+  }),
+  line('boon-after', {
+    th: 'ลุงชัยฝากขอบใจมาด้วย ว่าง ๆ มากินข้าวที่ร้านยายนะ',
+    en: 'Uncle Chai sent his thanks. Come and eat at my shop some time.',
+  }),
+
+  // Uncle Chai: the clock tower keeper.
+  {
+    id: 'chai-ask',
+    start: 'ask',
+    nodes: {
+      ask: {
+        text: {
+          th: 'หอนาฬิกาหยุดเดินมาหลายปีแล้ว เฟืองมันฝืดหมด ถ้ามีน้ำมันหล่อลื่นสักขวดก็น่าจะซ่อมได้นะ… ช่วยลุงหน่อยได้ไหม?',
+          en: 'The tower clock stopped years ago. The gears are stiff — with a bottle of machine oil I could fix it… Would you help me?',
+        },
+        choices: [
+          {
+            text: { th: 'ได้เลยครับ/ค่ะ ลุง', en: 'Sure, I’ll find some.' },
+            next: 'accepted',
+            effects: [{ type: 'startQuest', quest: 'stopped-clock' }],
+          },
+          { text: { th: 'ไว้ก่อนนะลุง', en: 'Maybe later.' } },
+        ],
+      },
+      accepted: {
+        text: {
+          th: 'ร้านป้าแดงน่าจะมีขายนะ ขอบใจมาก',
+          en: 'Aunt Daeng’s store should have some. Thank you.',
+        },
+      },
+    },
+  },
+  line('chai-waiting', {
+    th: 'น้ำมันหล่อลื่นหาได้ที่ร้านป้าแดงนะ ลุงรออยู่ตรงนี้แหละ',
+    en: 'You can get machine oil at Aunt Daeng’s. I’ll be right here.',
+  }),
+  {
+    id: 'chai-oil',
+    start: 'oil',
+    nodes: {
+      oil: {
+        text: {
+          th: 'น้ำมันหล่อลื่น! เดี๋ยวลุงหยอดเฟืองให้… ฟังสิ หอนาฬิกาเดินแล้ว! นี่ค่าเหนื่อยนะ',
+          en: 'Machine oil! Let me oil the gears… Listen — the clock is running again! Here, for your trouble.',
+        },
+        effects: [
+          { type: 'changeItem', item: 'machine-oil', count: -1 },
+          { type: 'completeStep', quest: 'stopped-clock', step: 'oil' },
+        ],
+      },
+    },
+  },
+  line('chai-after', {
+    th: 'ทุกชั่วโมงหอนาฬิกาจะตีบอกเวลา คนทั้งเมืองได้ยินเลยนะ',
+    en: 'Every hour the tower chimes now. The whole town can hear it.',
+  }),
+  line('chai-curry-early', {
+    th: 'แกงจากยายบุญเหรอ ขอบใจนะ แต่ลุงยังไม่เข้ากะ เอามาตอนเย็นดีกว่า จะได้กินตอนยังร้อน',
+    en: 'Curry from Grandma Boon? Thanks — but my shift hasn’t started. Bring it this evening so I can eat it hot.',
+  }),
+  {
+    id: 'chai-curry',
+    start: 'curry',
+    nodes: {
+      curry: {
+        text: {
+          th: 'แกงเขียวหวานของยายบุญ! หอมจริง ๆ คืนนี้ลุงไม่หิวแล้ว ฝากขอบใจยายด้วยนะ',
+          en: 'Grandma Boon’s green curry! It smells wonderful. I won’t go hungry tonight — thank her for me.',
+        },
+        effects: [
+          { type: 'changeItem', item: 'green-curry', count: -1 },
+          { type: 'completeStep', quest: 'boons-curry', step: 'deliver' },
+        ],
+      },
+    },
+  },
+
+  // Ton and his cat Som.
+  {
+    id: 'ton-ask',
+    start: 'ask',
+    nodes: {
+      ask: {
+        text: {
+          th: 'เจ้าส้ม แมวของผมหายไปตั้งแต่เมื่อวาน… มันชอบมุดเข้าซอยแคบ ๆ หลังร้านยายบุญ แต่ผมเข้าไปไม่เป็น ช่วยตามหาหน่อยได้ไหมครับ?',
+          en: 'Som, my cat, has been gone since yesterday… She loves the narrow alley behind Grandma Boon’s, but I can’t find the way in. Could you look for her?',
+        },
+        choices: [
+          {
+            text: { th: 'ได้สิ เดี๋ยวไปตามหาให้', en: 'Sure, I’ll look for her.' },
+            next: 'accepted',
+            effects: [{ type: 'startQuest', quest: 'lost-cat' }],
+          },
+          { text: { th: 'ไว้ทีหลังนะ', en: 'Later, okay?' } },
+        ],
+      },
+      accepted: {
+        text: {
+          th: 'ขอบคุณครับ! ทางเข้าซอยน่าจะอยู่แถวด้านล่างของร้านยายบุญนะ',
+          en: 'Thank you! The way into the alley should be somewhere below Grandma Boon’s shop.',
+        },
+      },
+    },
+  },
+  line('ton-waiting', {
+    th: 'ยังไม่เจอเจ้าส้มเลยเหรอครับ… ลองหาทางเข้าซอยที่อยู่ด้านล่างของร้านยายบุญดูนะ',
+    en: 'Still no Som?… Try to find the way into the alley below Grandma Boon’s shop.',
+  }),
+  {
+    id: 'ton-found',
+    start: 'found',
+    nodes: {
+      found: {
+        text: {
+          th: 'เจ้าส้มกลับมาแล้ว! มันวิ่งมาหาผมเลย ขอบคุณมากนะครับ นี่เงินเก็บของผม',
+          en: 'Som is back! She ran straight to me. Thank you so much — here, from my savings.',
+        },
+        effects: [{ type: 'completeStep', quest: 'lost-cat', step: 'tell' }],
+      },
+    },
+  },
+  line('ton-after', {
+    th: 'ตอนนี้ผมผูกกระดิ่งให้เจ้าส้มแล้ว จะได้ไม่หลงอีก',
+    en: 'I put a little bell on Som now, so she won’t get lost again.',
+  }),
+  {
+    id: 'som-found',
+    start: 'found',
+    nodes: {
+      found: {
+        speaker: { th: 'เจ้าส้ม', en: 'Som' },
+        text: {
+          th: 'เมี้ยว~ (เจ้าส้มคลอเคลียขาคุณ แล้ววิ่งออกจากซอยไปทางตลาด)',
+          en: 'Meow~ (Som rubs against your legs, then trots out of the alley toward the market.)',
+        },
+        effects: [
+          { type: 'setFlag', flag: 'som-left-alley' },
+          { type: 'completeStep', quest: 'lost-cat', step: 'find' },
+        ],
+      },
+    },
+  },
+  line('som-meow', {
+    th: 'เมี้ยว? (แมวส้มตัวอ้วนมองคุณอย่างสงสัย)',
+    en: 'Meow? (A chubby orange cat eyes you curiously.)',
+  }),
+  line('som-purr', {
+    th: 'ครืด ครืด… (เจ้าส้มนอนอาบแดดข้าง ๆ ต้นอย่างมีความสุข)',
+    en: 'Purr… (Som is happily sunbathing next to Ton.)',
+  }),
+
   {
     id: 'daeng-hello',
     start: 'hello',

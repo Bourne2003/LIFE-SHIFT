@@ -130,6 +130,7 @@ describe('GameSession', () => {
       'jasmine-garland',
       'thai-iced-tea',
       'mango-sticky-rice',
+      'machine-oil',
     ]);
 
     session.buySelected();
@@ -138,7 +139,9 @@ describe('GameSession', () => {
     expect(events).toContain('purchased');
     expect(session.shopView!.entries[0]!.owned).toBe(1);
 
-    session.moveSelection(-1); // wraps to the last entry (35 baht; 30 left)
+    session.moveSelection(-1); // wraps to the last entry
+    expect(session.shopView!.selected).toBe(3);
+    session.moveSelection(-1); // mango sticky rice: 35 baht, only 30 left
     expect(session.shopView!.selected).toBe(2);
     expect(session.shopView!.entries[2]!.affordable).toBe(false);
     session.buySelected();
@@ -200,5 +203,35 @@ describe('GameSession', () => {
     session.setClock({ day: 5, minute: 12 * 60 });
     expect(session.environment.weather).toBe(weatherForDay(5));
     expect(session.environment.darkness).toBe(0);
+  });
+
+  it('only lets the player talk to NPCs who are around', () => {
+    const session = new GameSession(CONTENT);
+    expect(session.presentNpcs.map((n) => n.id)).toContain('som-alley');
+    expect(session.presentNpcs.map((n) => n.id)).not.toContain('som-home');
+    expect(session.talkTo('som-home')).toBe(false);
+  });
+
+  it('announces places and remembers first visits', () => {
+    const session = new GameSession(CONTENT);
+    const entered: { name: string; discovered: boolean }[] = [];
+    session.on((e) => {
+      if (e.type === 'locationEntered') entered.push({ name: e.name.en, discovered: e.discovered });
+    });
+    session.setLocation('park');
+    session.setLocation('park'); // staying put announces nothing
+    session.setLocation(null);
+    session.setLocation('hidden-alley');
+    session.setLocation(null);
+    session.setLocation('hidden-alley');
+    expect(entered).toEqual([
+      { name: 'The park', discovered: false },
+      { name: 'The hidden alley', discovered: true },
+      { name: 'The hidden alley', discovered: false },
+    ]);
+    expect(session.state.flags).toMatchObject({
+      'visited:park': true,
+      'visited:hidden-alley': true,
+    });
   });
 });

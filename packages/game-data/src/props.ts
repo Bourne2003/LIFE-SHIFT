@@ -21,4 +21,15 @@ export const PROPS: readonly WorldPropDef[] = [
     heightTiles: 1,
     when: [{ phase: ['evening', 'night'] }],
   })),
+  {
+    // Lit once Uncle Chai's clock runs again.
+    id: 'clock-tower-face',
+    kind: 'clock-face',
+    xTiles: 27,
+    yTiles: 14,
+    widthTiles: 1,
+    heightTiles: 1,
+    when: [{ flag: 'clock-tower-fixed' }],
+    onBuilding: true,
+  },
 ];

@@ -20,6 +20,11 @@ export class BootScene extends Phaser.Scene {
     this.makeTileTexture(TextureKeys.Building, 0x6a4d39, 0x5b422f);
     this.makeNoodleStallTexture();
     this.makeLanternTextures();
+    this.makeCatTexture();
+    this.makeClockFaceTexture();
+    this.makeTileTexture(TextureKeys.ParkGround, 0x4c8a4a, 0x6aa85e); // lawn with flowers
+    this.makeTileTexture(TextureKeys.MarketGround, 0xa39a86, 0x8f8774); // paving
+    this.makeTileTexture(TextureKeys.AlleyGround, 0x5f5a55, 0x4f4a46); // cobbles
 
     this.scene.start(SceneKeys.World);
     this.scene.launch(SceneKeys.UI);
@@ -92,6 +97,31 @@ export class BootScene extends Phaser.Scene {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, size, size);
     canvas.refresh();
+  }
+
+  /** Small orange cat, sitting. */
+  private makeCatTexture(): void {
+    const g = this.make.graphics({}, false);
+    g.fillStyle(0x000000, 0.2).fillEllipse(16, 29, 16, 4);
+    g.fillStyle(0xe08a2e).fillEllipse(16, 23, 14, 12); // body
+    g.fillStyle(0xe08a2e).fillCircle(16, 14, 6); // head
+    g.fillTriangle(11, 11, 12, 5, 15, 9).fillTriangle(21, 11, 20, 5, 17, 9); // ears
+    g.fillStyle(0xb8691c).fillRect(12, 21, 8, 2).fillRect(13, 25, 6, 2); // stripes
+    g.fillStyle(0x1b1b1b).fillCircle(14, 14, 1).fillCircle(18, 14, 1); // eyes
+    g.lineStyle(3, 0xe08a2e).beginPath().arc(24, 22, 5, -1.2, 1.4).strokePath(); // tail
+    g.generateTexture(TextureKeys.Cat, TILE_SIZE, TILE_SIZE);
+    g.destroy();
+  }
+
+  /** Clock face shown on the tower once it runs again. */
+  private makeClockFaceTexture(): void {
+    const g = this.make.graphics({}, false);
+    g.fillStyle(0x2e2a24).fillCircle(16, 16, 14);
+    g.fillStyle(0xfff4d6).fillCircle(16, 16, 12);
+    g.lineStyle(2, 0x2e2a24).lineBetween(16, 16, 16, 7).lineBetween(16, 16, 22, 19);
+    g.fillStyle(0xc0392b).fillCircle(16, 16, 2);
+    g.generateTexture(TextureKeys.ClockFace, TILE_SIZE, TILE_SIZE);
+    g.destroy();
   }
 
   private makeTileTexture(key: string, base: number, detail: number): void {

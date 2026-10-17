@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
-import { NPCS, PROPS } from '@life-shift/game-data';
+import { LOCATIONS, NPCS, PROPS } from '@life-shift/game-data';
 import {
   IDLE_INTENT,
   TILE_SIZE,
   WORLD_OBSTACLES,
   findInteractionTarget,
+  locationAt,
   tileFeet,
   type LocalizedText,
+  type LocationDef,
   type WorldPropDef,
 } from '@life-shift/shared';
 import { Player } from '../entities/Player';
@@ -28,6 +30,13 @@ const NPC_FEET_H = 10;
 const PROP_TEXTURES: Record<WorldPropDef['kind'], string> = {
   'noodle-stall': TextureKeys.NoodleStall,
   lantern: TextureKeys.Lantern,
+  'clock-face': TextureKeys.ClockFace,
+};
+
+const GROUND_TEXTURES: Record<NonNullable<LocationDef['ground']>, string> = {
+  park: TextureKeys.ParkGround,
+  market: TextureKeys.MarketGround,
+  alley: TextureKeys.AlleyGround,
 };
 
 /** Props that light up the night. */
@@ -49,6 +58,7 @@ export class WorldScene extends Phaser.Scene {
     id: string;
     name: LocalizedText;
     sprite: Phaser.GameObjects.Image;
+    blocker: Phaser.GameObjects.Zone;
   }[] = [];
 
   constructor() {
@@ -65,6 +75,19 @@ export class WorldScene extends Phaser.Scene {
     const worldH = WORLD_TILES_HIGH * TILE_SIZE;
 
     this.add.tileSprite(0, 0, worldW, worldH, TextureKeys.Ground).setOrigin(0);
+    // Named places with their own ground (park lawn, market paving, alley cobbles), under roads.
+    for (const loc of LOCATIONS) {
+      if (!loc.ground) continue;
+      this.add
+        .tileSprite(
+          loc.xTiles * TILE_SIZE,
+          loc.yTiles * TILE_SIZE,
+          loc.widthTiles * TILE_SIZE,
+          loc.heightTiles * TILE_SIZE,
+          GROUND_TEXTURES[loc.ground],
+        )
+        .setOrigin(0);
+    }
     // Placeholder central street, to give the camera movement a visual reference.
     this.add
       .tileSprite(0, worldH / 2 - TILE_SIZE, worldW, TILE_SIZE * 2, TextureKeys.Road)
@@ -109,13 +132,15 @@ export class WorldScene extends Phaser.Scene {
     const obstacleBodies = this.physics.add.staticGroup();
     this.npcSprites = NPCS.map((npc) => {
       const feet = tileFeet(npc.xTiles, npc.yTiles);
-      const sprite = this.add.image(feet.x, feet.y, TextureKeys.Npc).setOrigin(0.5, 1);
+      const texture = npc.look === 'cat' ? TextureKeys.Cat : TextureKeys.Npc;
+      const sprite = this.add.image(feet.x, feet.y, texture).setOrigin(0.5, 1);
       sprite.setDepth(sprite.y);
       // NPCs block the player at their feet only, like the player's own body.
       const blocker = this.add.zone(feet.x, feet.y - NPC_FEET_H / 2, NPC_FEET_W, NPC_FEET_H);
       obstacleBodies.add(blocker);
-      return { id: npc.id, name: npc.name, sprite };
+      return { id: npc.id, name: npc.name, sprite, blocker };
     });
+    this.refreshNpcs();
     for (const obstacle of WORLD_OBSTACLES) {
       const x = obstacle.xTiles * TILE_SIZE;
       const y = obstacle.yTiles * TILE_SIZE;
@@ -143,7 +168,10 @@ export class WorldScene extends Phaser.Scene {
     this.scale.on(Phaser.Scale.Events.RESIZE, this.fitCamera, this);
     const { session, save } = this.services;
     const offSession = session.on((e) => {
-      if (e.type === 'stateChanged') this.refreshProps();
+      if (e.type === 'stateChanged') {
+        this.refreshProps();
+        this.refreshNpcs();
+      }
       if (e.type === 'clockTick') this.refreshLighting();
     });
     const stopAutosave = startAutosave(session, save, () => this._player.feet);
@@ -204,18 +232,40 @@ export class WorldScene extends Phaser.Scene {
 
     if (actions.has('cancel')) session.toggleInventory(false);
     this._player.applyIntent(input.getMoveIntent());
-    const target = findInteractionTarget(this._player.feet, this.npcs);
+    const feet = this._player.feet;
+    session.setLocation(locationAt(feet, LOCATIONS)?.id ?? null);
+    const target = findInteractionTarget(
+      feet,
+      this.npcs.filter((n) => n.present),
+    );
     session.setNearbyNpc(target?.id ?? null);
     if (target && actions.has('interact')) session.talkTo(target.id);
   }
 
-  get npcs(): readonly { id: string; name: LocalizedText; x: number; y: number }[] {
+  get npcs(): readonly {
+    id: string;
+    name: LocalizedText;
+    x: number;
+    y: number;
+    present: boolean;
+  }[] {
     return this.npcSprites.map(({ id, name, sprite }) => ({
       id,
       name,
       x: sprite.x,
       y: sprite.y,
+      present: sprite.visible,
     }));
+  }
+
+  /** Shows only NPCs who are around in the current story state; absent ones neither block nor talk. */
+  private refreshNpcs(): void {
+    const present = new Set(this.services.session.presentNpcs.map((n) => n.id));
+    for (const { id, sprite, blocker } of this.npcSprites) {
+      const here = present.has(id);
+      sprite.setVisible(here);
+      (blocker.body as Phaser.Physics.Arcade.StaticBody).enable = here;
+    }
   }
 
   private fitCamera(size: Phaser.Structs.Size): void {

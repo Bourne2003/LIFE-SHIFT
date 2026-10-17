@@ -150,6 +150,10 @@ export class UIScene extends Phaser.Scene {
         return this.toast(ui.bought(t(event.item), event.price));
       case 'cannotAfford':
         return this.toast(ui.cannotAfford(t(event.item)), '#ff8a80');
+      case 'locationEntered':
+        return event.discovered
+          ? this.toast(ui.secretFound(t(event.name)), '#c9a7ff')
+          : this.toast(`— ${t(event.name)} —`, '#ffffff');
       case 'moneyReceived':
         return this.toast(ui.moneyReceived(event.amount));
     }

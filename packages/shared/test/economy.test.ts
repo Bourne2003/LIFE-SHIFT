@@ -63,6 +63,7 @@ describe('validateContent (items and shops)', () => {
       quests: {},
       props: [],
       items: { tea: { id: 'tea', name: t('Tea'), description: { th: '', en: 'x' } } },
+      locations: [],
       shops: {
         s: { id: 's', name: t('S'), stock: [{ item: 'ghost', price: 0 }] },
       },

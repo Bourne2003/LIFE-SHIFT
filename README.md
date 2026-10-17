@@ -10,7 +10,8 @@ install.
 stall in the city, NPCs remember you, and progress is saved automatically on the device. The MVP
 economy is in: earn baht from quests, shop at Aunt Daeng's store, and check your bag. Days pass
 (one in-game day is 24 real minutes): nights are dark, the park lanterns light up, and some days it
-rains — and people notice. See [docs/GDD/vision.md](docs/GDD/vision.md)
+rains — and people notice. Explore seven named places (one of them secret), meet 10 people and
+finish 5 quests. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
 ## Quick start
