@@ -43,6 +43,7 @@ export interface DebugApi {
   environment(): EnvironmentView & { nightOpacity: number; raining: boolean };
   /** Jumps the world clock (dev-only test hook). */
   setClock(day: number, minute: number): void;
+  paused(): boolean;
   /** Whether a save exists in storage right now. */
   hasSave(): boolean;
   /** Screen position of the touch interact button, if this device has one. */
@@ -111,6 +112,7 @@ export function installDebugApi(game: Phaser.Game): void {
       raining: ui().raining,
     }),
     setClock: (day, minute) => session().setClock({ day, minute }),
+    paused: () => session().paused,
     hasSave: () => window.localStorage.getItem(SAVE_KEY) !== null,
     interactButton: () => {
       const button = ui().interactButton;

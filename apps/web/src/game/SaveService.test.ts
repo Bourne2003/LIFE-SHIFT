@@ -64,4 +64,12 @@ describe('SaveService', () => {
     new SaveService(store).clear();
     expect(store.data[SAVE_KEY]).toBeUndefined();
   });
+
+  it('stops writing once disabled (new game)', () => {
+    const store = memoryStore();
+    const service = new SaveService(store);
+    service.disable();
+    expect(service.write(INITIAL_STATE, null)).toBe(false);
+    expect(store.data[SAVE_KEY]).toBeUndefined();
+  });
 });

@@ -211,13 +211,23 @@ export class WorldScene extends Phaser.Scene {
     // huge hitch. Keep it generous so slow devices (a few fps) still get real-time days.
     session.tick(Math.min(deltaMs, 1000) / 1000);
     const actions = input.consumeActions();
+
+    // The pause menu is driven by its buttons; Esc resumes.
+    if (session.paused) {
+      this._player.applyIntent(IDLE_INTENT);
+      if (actions.has('cancel')) session.setPaused(false);
+      return;
+    }
+
     if (actions.has('inventory') && !session.inShop) session.toggleInventory();
 
     if (session.inShop) {
       this._player.applyIntent(IDLE_INTENT);
       if (actions.has('navUp')) session.moveSelection(-1);
       if (actions.has('navDown')) session.moveSelection(1);
-      if (actions.has('interact')) session.buySelected();
+      if (actions.has('interact')) session.confirmShopEntry();
+      if (actions.has('switchTab'))
+        session.setShopMode(session.shopView?.mode === 'buy' ? 'sell' : 'buy');
       if (actions.has('cancel')) session.closeShop();
       return;
     }
@@ -230,7 +240,11 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    if (actions.has('cancel')) session.toggleInventory(false);
+    // Esc closes the bag if it is open, otherwise opens the pause menu.
+    if (actions.has('cancel')) {
+      if (session.inventoryOpen) session.toggleInventory(false);
+      else return session.setPaused(true);
+    }
     this._player.applyIntent(input.getMoveIntent());
     const feet = this._player.feet;
     session.setLocation(locationAt(feet, LOCATIONS)?.id ?? null);

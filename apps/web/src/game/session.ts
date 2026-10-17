@@ -4,6 +4,8 @@ import {
   INITIAL_STATE,
   advanceClock,
   buyItem,
+  sellItem,
+  sellPrice,
   darkness,
   dayPhase,
   isNpcPresent,
@@ -44,9 +46,13 @@ export interface TrackedQuest {
   readonly step: LocalizedText;
 }
 
+export type ShopMode = 'buy' | 'sell';
+
 /** What the shop UI shows. */
 export interface ShopView {
   readonly shopId: string;
+  /** Buying from the shop, or selling the player's items back to it. */
+  readonly mode: ShopMode;
   readonly name: LocalizedText;
   readonly money: number;
   readonly entries: readonly {
@@ -89,6 +95,7 @@ export type SessionEvent =
     }
   | { readonly type: 'purchased'; readonly item: LocalizedText; readonly price: number }
   | { readonly type: 'cannotAfford'; readonly item: LocalizedText }
+  | { readonly type: 'sold'; readonly item: LocalizedText; readonly price: number }
   /** The player walked into a named place; `discovered` on the first visit to a secret one. */
   | { readonly type: 'locationEntered'; readonly name: LocalizedText; readonly discovered: boolean }
   /** The in-game clock passed a minute (HUD clock). */
@@ -114,7 +121,12 @@ export class GameSession {
   private _state: GameState;
   private nearby: NpcDef | null = null;
   private convo: Conversation | null = null;
-  private shop: { readonly def: ShopDef; readonly selected: number } | null = null;
+  private shop: {
+    readonly def: ShopDef;
+    readonly selected: number;
+    readonly mode: ShopMode;
+  } | null = null;
+  private _paused = false;
   private _inventoryOpen = false;
   private _location: LocationDef | null = null;
   private readonly listeners = new Set<(event: SessionEvent) => void>();
@@ -189,25 +201,34 @@ export class GameSession {
 
   get shopView(): ShopView | null {
     if (!this.shop) return null;
-    const { def, selected } = this.shop;
+    const { def, selected, mode } = this.shop;
+    const { money } = this._state;
+    return { shopId: def.id, name: def.name, mode, money, selected, entries: this.shopEntries() };
+  }
+
+  /** Buy mode: the shop's stock. Sell mode: what the player owns that this shop buys back. */
+  private shopEntries(): ShopView['entries'] {
+    if (!this.shop) return [];
+    const { def, mode } = this.shop;
     const { money, inventory } = this._state;
-    return {
-      shopId: def.id,
-      name: def.name,
-      money,
-      selected,
-      entries: def.stock.map(({ item, price }) => {
-        const itemDef = this.content.items[item]!;
-        return {
-          item,
-          name: itemDef.name,
-          description: itemDef.description,
-          price,
-          owned: inventory[item] ?? 0,
-          affordable: money >= price,
-        };
-      }),
-    };
+    return def.stock.flatMap(({ item, price }) => {
+      const itemDef = this.content.items[item]!;
+      const owned = inventory[item] ?? 0;
+      const base = { item, name: itemDef.name, description: itemDef.description, owned };
+      if (mode === 'buy') return [{ ...base, price, affordable: money >= price }];
+      return owned > 0 ? [{ ...base, price: sellPrice(def, item)!, affordable: true }] : [];
+    });
+  }
+
+  get paused(): boolean {
+    return this._paused;
+  }
+
+  /** Pausing stops time and the player; menus are drawn by the UI. */
+  setPaused(paused: boolean): void {
+    if (paused === this._paused) return;
+    this._paused = paused;
+    this.emit({ type: 'changed' });
   }
 
   /** What the player carries, in catalogue order. */
@@ -229,7 +250,7 @@ export class GameSession {
   openShop(shopId: string): boolean {
     const def = this.content.shops[shopId];
     if (!def || this.convo) return false;
-    this.shop = { def, selected: 0 };
+    this.shop = { def, selected: 0, mode: 'buy' };
     this._inventoryOpen = false;
     this.emit({ type: 'changed' });
     return true;
@@ -241,18 +262,30 @@ export class GameSession {
     this.emit({ type: 'changed' });
   }
 
+  setShopMode(mode: ShopMode): void {
+    if (!this.shop || this.shop.mode === mode) return;
+    this.shop = { ...this.shop, mode, selected: 0 };
+    this.emit({ type: 'changed' });
+  }
+
   /** Highlights a shop entry (e.g. tapped). */
   selectShopEntry(index: number): void {
     if (!this.shop || !Number.isInteger(index)) return;
-    if (index < 0 || index >= this.shop.def.stock.length) return;
+    if (index < 0 || index >= this.shopEntries().length) return;
     this.shop = { ...this.shop, selected: index };
     this.emit({ type: 'changed' });
+  }
+
+  /** Buys or sells (depending on the mode) one of the highlighted entry. */
+  confirmShopEntry(): void {
+    if (this.shop?.mode === 'sell') this.sellSelected();
+    else this.buySelected();
   }
 
   /** Buys one of the highlighted shop entry. */
   buySelected(): void {
     const shop = this.shop;
-    const entry = shop?.def.stock[shop.selected];
+    const entry = shop?.mode === 'buy' ? shop.def.stock[shop.selected] : undefined;
     if (!shop || !entry) return;
     const name = this.content.items[entry.item]!.name;
     const result = buyItem(this._state, shop.def, entry.item);
@@ -262,6 +295,20 @@ export class GameSession {
     }
     this.commit(result.state);
     this.emit({ type: 'purchased', item: name, price: result.price });
+  }
+
+  /** Sells one of the highlighted item back to the shop. */
+  sellSelected(): void {
+    const shop = this.shop;
+    const entry = shop?.mode === 'sell' ? this.shopEntries()[shop.selected] : undefined;
+    if (!shop || !entry) return;
+    const result = sellItem(this._state, shop.def, entry.item);
+    if (!result.ok) return;
+    // Selling the last one removes its row: keep the highlight on a real entry.
+    const remaining = shop.def.stock.filter(({ item }) => (result.state.inventory[item] ?? 0) > 0);
+    this.shop = { ...shop, selected: Math.max(0, Math.min(shop.selected, remaining.length - 1)) };
+    this.commit(result.state, { sale: true });
+    this.emit({ type: 'sold', item: entry.name, price: result.price });
   }
 
   get conversation(): ConversationView | null {
@@ -293,7 +340,7 @@ export class GameSession {
    * of day or a new day counts as a state change (lanterns light up, NPCs say other things).
    */
   tick(realSeconds: number): void {
-    if (this.convo || this.shop) return;
+    if (this.convo || this.shop || this._paused) return;
     const before = this._state.clock;
     const clock = advanceClock(before, realSeconds);
     if (clock === before) return;
@@ -301,13 +348,13 @@ export class GameSession {
     if (Math.floor(clock.minute) !== Math.floor(before.minute) || clock.day !== before.day)
       this.emit({ type: 'clockTick' });
     if (clock.day !== before.day || dayPhase(clock.minute) !== dayPhase(before.minute))
-      this.commit(this._state, before);
+      this.commit(this._state, { clockBefore: before });
   }
 
   /** Sets the clock directly (debugging and tests). */
   setClock(clock: GameClock): void {
     const before = this._state;
-    this.commit({ ...before, clock }, before.clock);
+    this.commit({ ...before, clock }, { clockBefore: before.clock });
     this.emit({ type: 'clockTick' });
   }
 
@@ -365,7 +412,8 @@ export class GameSession {
   /** Moves the highlight (dialogue choice or shop entry), wrapping around. */
   moveSelection(delta: number): void {
     if (this.shop) {
-      const count = this.shop.def.stock.length;
+      const count = this.shopEntries().length;
+      if (count === 0) return;
       const selected = (((this.shop.selected + delta) % count) + count) % count;
       this.shop = { ...this.shop, selected };
       this.emit({ type: 'changed' });
@@ -392,14 +440,19 @@ export class GameSession {
 
   /**
    * Replaces the game state and announces what changed. `clockBefore` marks a change that
-   * happened through the clock, where the state object was already updated in place.
+   * happened through the clock, where the state object was already updated in place; `sale`
+   * marks income from selling.
    */
-  private commit(state: GameState, clockBefore?: GameClock): void {
+  private commit(
+    state: GameState,
+    { clockBefore, sale = false }: { clockBefore?: GameClock; sale?: boolean } = {},
+  ): void {
     const before = clockBefore ? { ...state, clock: clockBefore } : this._state;
     this._state = state;
     this.emit({ type: 'changed' });
     if (state === before) return;
-    if (state.money > before.money)
+    // A sale announces itself; only other income (rewards) counts as "money received".
+    if (state.money > before.money && !sale)
       this.emit({ type: 'moneyReceived', amount: state.money - before.money });
     this.emit({ type: 'stateChanged' });
     for (const quest of Object.values(this.content.quests)) {

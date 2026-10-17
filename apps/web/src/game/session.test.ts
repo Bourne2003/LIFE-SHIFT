@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONTENT } from '@life-shift/game-data';
-import { START_CLOCK, weatherForDay } from '@life-shift/shared';
+import { INITIAL_STATE, START_CLOCK, weatherForDay } from '@life-shift/shared';
 import { GameSession, type SessionEvent } from './session';
 
 function finish(session: GameSession): void {
@@ -233,5 +233,39 @@ describe('GameSession', () => {
       'visited:park': true,
       'visited:hidden-alley': true,
     });
+  });
+
+  it('sells items back to the shop at half price', () => {
+    const session = new GameSession(CONTENT, {
+      ...INITIAL_STATE,
+      inventory: { 'thai-iced-tea': 2, 'green-curry': 1 },
+    });
+    const events: string[] = [];
+    session.on((e) => events.push(e.type));
+    session.openShop('daeng-store');
+    session.setShopMode('sell');
+    // Only what this shop stocks can be sold (not Grandma Boon's curry).
+    expect(session.shopView!.entries.map((e) => [e.item, e.price, e.owned])).toEqual([
+      ['thai-iced-tea', 7, 2],
+    ]);
+    session.confirmShopEntry();
+    session.confirmShopEntry();
+    expect(session.state.money).toBe(INITIAL_STATE.money + 14);
+    expect(session.state.inventory).toEqual({ 'green-curry': 1 });
+    expect(session.shopView!.entries).toEqual([]);
+    expect(events.filter((e) => e === 'sold')).toHaveLength(2);
+    expect(events).not.toContain('moneyReceived'); // a sale is not a reward
+    session.confirmShopEntry(); // nothing left: no-op
+    expect(session.state.money).toBe(INITIAL_STATE.money + 14);
+  });
+
+  it('stops time while paused', () => {
+    const session = new GameSession(CONTENT);
+    session.setPaused(true);
+    session.tick(120);
+    expect(session.environment.minute).toBe(START_CLOCK.minute);
+    session.setPaused(false);
+    session.tick(1);
+    expect(session.environment.minute).toBe(START_CLOCK.minute + 1);
   });
 });

@@ -39,7 +39,7 @@ developer experience, visual quality.
 | 2   | Playable City          | Small map, collision, NPCs, interaction, dialogue, basic quest                | **Done** |
 | 3   | World Memory           | World state, quest consequences, NPC memory, save/load                        | **Done** |
 | 4   | LAN Multiplayer        | Local server, room, connection, sync, disconnect handling                     |          |
-| 5   | Online Ready           | Deploy config, env config, HTTPS, database design, monitoring                 |          |
+| 5   | Online Ready           | Deploy config, env config, HTTPS, database design, monitoring                 | Started  |
 
 Multiplayer order: local single-player → local server → LAN → Internet → persistent accounts →
 persistent world. Multiplayer stays behind `VITE_MULTIPLAYER_ENABLED` until single-player is
@@ -50,8 +50,9 @@ the MVP definition below. Day/night (24-minute days, lit park lanterns) and clea
 in too. The city now has named places (home, morning market, Aunt Daeng's store, clock-tower
 landmark, park, Grandma Boon's curry shop and a secret alley), 10 NPCs and 5 quests, three of
 which change the world (noodle stall, clock tower, a cat that goes home). The vertical slice is
-content-complete; next is polish (art, sound, a pause/new-game menu, selling items) before
-milestone 4.
+content-complete. Polish so far: a pause menu (resume, new game with confirmation) and selling
+items back to shops at half price. Still to polish before milestone 4: real art and sound. A public playtest build is published
+to GitHub Pages on every push to `main` (ADR-006).
 
 ## MVP definition (end of milestone 3 + shop)
 

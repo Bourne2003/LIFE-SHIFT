@@ -30,6 +30,20 @@ export interface UiStrings {
   readonly weatherClear: string;
   readonly weatherRain: string;
   secretFound(place: string): string;
+  readonly sellButton: string;
+  readonly toSellMode: string;
+  readonly toBuyMode: string;
+  readonly sellEmpty: string;
+  sold(item: string, price: number): string;
+  readonly menuButton: string;
+  readonly pausedTitle: string;
+  pausedSummary(day: number, money: string, done: number, total: number): string;
+  readonly resumeButton: string;
+  readonly newGameButton: string;
+  readonly newGameWarning: string;
+  readonly confirmNewGame: string;
+  readonly cancelButton: string;
+  readonly pauseHintKeyboard: string;
 }
 
 export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
@@ -52,8 +66,8 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     owned: (n) => `มีอยู่ ${n}`,
     buyButton: 'ซื้อ',
     closeButton: 'ปิด',
-    shopHintKeyboard: 'ลูกศรเพื่อเลือก · E ซื้อ · Esc ปิด',
-    shopHintTouch: 'แตะสินค้าเพื่อเลือก แล้วกด “ซื้อ”',
+    shopHintKeyboard: 'ลูกศรเพื่อเลือก · E ยืนยัน · Tab สลับซื้อ/ขาย · Esc ปิด',
+    shopHintTouch: 'แตะสินค้าเพื่อเลือก แล้วกดปุ่มยืนยัน',
     bought: (item, price) => `ซื้อ${item}แล้ว (−฿${price})`,
     cannotAfford: (item) => `เงินไม่พอซื้อ${item}`,
     moneyReceived: (n) => `ได้รับเงิน ฿${n}`,
@@ -61,6 +75,21 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     weatherClear: 'อากาศแจ่มใส',
     weatherRain: 'ฝนตก',
     secretFound: (place) => `ค้นพบสถานที่ลับ: ${place}`,
+    sellButton: 'ขาย',
+    toSellMode: 'ขายของ',
+    toBuyMode: 'ซื้อของ',
+    sellEmpty: 'ไม่มีของที่ร้านนี้รับซื้อ',
+    sold: (item, price) => `ขาย${item}แล้ว (+฿${price})`,
+    menuButton: 'เมนู',
+    pausedTitle: 'หยุดเกมชั่วคราว',
+    pausedSummary: (day, money, done, total) =>
+      `วันที่ ${day} · ${money} · ทำเควสต์สำเร็จ ${done}/${total}`,
+    resumeButton: 'เล่นต่อ',
+    newGameButton: 'เริ่มเกมใหม่',
+    newGameWarning: 'การเริ่มใหม่จะลบความคืบหน้าทั้งหมดในเครื่องนี้ แน่ใจหรือไม่?',
+    confirmNewGame: 'ยืนยัน เริ่มใหม่',
+    cancelButton: 'ยกเลิก',
+    pauseHintKeyboard: 'กด Esc เพื่อเล่นต่อ',
   },
   en: {
     moveHintKeyboard: 'WASD / Arrow keys to move · E to talk',
@@ -81,8 +110,8 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     owned: (n) => `Owned: ${n}`,
     buyButton: 'Buy',
     closeButton: 'Close',
-    shopHintKeyboard: 'Arrows to choose · E to buy · Esc to close',
-    shopHintTouch: 'Tap an item, then Buy',
+    shopHintKeyboard: 'Arrows to choose · E to confirm · Tab buy/sell · Esc to close',
+    shopHintTouch: 'Tap an item, then the confirm button',
     bought: (item, price) => `Bought ${item} (−฿${price})`,
     cannotAfford: (item) => `Not enough money for ${item}`,
     moneyReceived: (n) => `Received ฿${n}`,
@@ -90,5 +119,20 @@ export const UI_STRINGS: Readonly<Record<Locale, UiStrings>> = {
     weatherClear: 'Clear',
     weatherRain: 'Rain',
     secretFound: (place) => `Secret place found: ${place}`,
+    sellButton: 'Sell',
+    toSellMode: 'Sell items',
+    toBuyMode: 'Buy items',
+    sellEmpty: 'Nothing this shop will buy',
+    sold: (item, price) => `Sold ${item} (+฿${price})`,
+    menuButton: 'Menu',
+    pausedTitle: 'Paused',
+    pausedSummary: (day, money, done, total) =>
+      `Day ${day} · ${money} · Quests done ${done}/${total}`,
+    resumeButton: 'Resume',
+    newGameButton: 'New game',
+    newGameWarning: 'Starting over erases all progress on this device. Are you sure?',
+    confirmNewGame: 'Yes, start over',
+    cancelButton: 'Cancel',
+    pauseHintKeyboard: 'Esc to resume',
   },
 };

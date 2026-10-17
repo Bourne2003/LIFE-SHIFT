@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { CONTENT } from '@life-shift/game-data';
+import { config } from '../config';
 import { SceneKeys } from '../game/sceneKeys';
 import { getServices } from '../game/services';
 import type { GameSession, SessionEvent } from '../game/session';
@@ -40,6 +42,9 @@ export class UIScene extends Phaser.Scene {
   private bagButton!: Phaser.GameObjects.Text;
   private shopPanel!: ListPanel;
   private bagPanel!: ListPanel;
+  private menuButton!: Phaser.GameObjects.Text;
+  private pausePanel!: ListPanel;
+  private confirmingNewGame = false;
   private toasts: Phaser.GameObjects.Text[] = [];
 
   constructor() {
@@ -59,6 +64,8 @@ export class UIScene extends Phaser.Scene {
     };
     return {
       bagButton: centre(this.bagButton),
+      menuButton: centre(this.menuButton),
+      pause: this.pausePanel.isVisible ? this.pausePanel.hitPoints : null,
       dialogueChoices: this.dialogue.choiceBounds.map((b) => ({
         x: b.x + b.width / 2,
         y: b.y + b.height / 2,
@@ -97,6 +104,10 @@ export class UIScene extends Phaser.Scene {
       .text(0, MARGIN, '', { ...LABEL_STYLE, fontStyle: 'bold' })
       .setInteractive({ useHandCursor: true });
     this.bagButton.on('pointerdown', () => session.toggleInventory());
+    this.menuButton = this.add
+      .text(0, MARGIN, '', { ...LABEL_STYLE, fontStyle: 'bold' })
+      .setInteractive({ useHandCursor: true });
+    this.menuButton.on('pointerdown', () => session.setPaused(!session.paused));
     this.money = this.add
       .text(0, MARGIN, '', { ...LABEL_STYLE, fontStyle: 'bold' })
       .setOrigin(1, 0);
@@ -125,6 +136,11 @@ export class UIScene extends Phaser.Scene {
       () => i18n.locale,
       () => {},
     );
+    this.pausePanel = new ListPanel(
+      this,
+      () => i18n.locale,
+      () => {},
+    );
 
     this.showHint();
     cleanups.push(session.on((event) => this.onSessionEvent(event)));
@@ -148,6 +164,8 @@ export class UIScene extends Phaser.Scene {
         return this.toast(ui.questCompleted(t(event.title)));
       case 'purchased':
         return this.toast(ui.bought(t(event.item), event.price));
+      case 'sold':
+        return this.toast(ui.sold(t(event.item), event.price));
       case 'cannotAfford':
         return this.toast(ui.cannotAfford(t(event.item)), '#ff8a80');
       case 'locationEntered':
@@ -166,7 +184,8 @@ export class UIScene extends Phaser.Scene {
     this.hint?.setText(this.touch ? ui.moveHintTouch : ui.moveHintKeyboard);
     this.actionButton?.setLabel(ui.talkButton);
 
-    const nearby = session.inConversation || session.inShop ? null : session.nearbyNpc;
+    const busy = session.inConversation || session.inShop || session.paused;
+    const nearby = busy ? null : session.nearbyNpc;
     this.prompt.setVisible(!!nearby && !this.touch);
     if (nearby) this.prompt.setText(ui.talkPrompt(i18n.text(nearby.name)));
     this.actionButton?.setVisible(!!nearby);
@@ -181,8 +200,10 @@ export class UIScene extends Phaser.Scene {
     this.money.setText(ui.money(session.state.money));
     this.renderClock(false);
     this.bagButton.setText(ui.bagButton);
+    this.menuButton.setText(ui.menuButton);
     this.renderShop();
     this.renderBag();
+    this.renderPause();
     this.layout();
   }
 
@@ -211,23 +232,94 @@ export class UIScene extends Phaser.Scene {
     const shop = session.shopView;
     if (!shop) return this.shopPanel.render(null);
     const selected = shop.entries[shop.selected];
+    const selling = shop.mode === 'sell';
     this.shopPanel.render({
-      title: i18n.text(shop.name),
+      title: `${i18n.text(shop.name)} · ${selling ? ui.toSellMode : ui.toBuyMode}`,
       titleDetail: ui.money(shop.money),
       rows: shop.entries.map((e) => ({
         label: e.owned ? `${i18n.text(e.name)}  (${ui.owned(e.owned)})` : i18n.text(e.name),
-        detail: ui.money(e.price),
+        detail: (selling ? '+' : '') + ui.money(e.price),
         dim: !e.affordable,
       })),
       selected: shop.selected,
-      emptyText: '',
+      emptyText: ui.sellEmpty,
       ...(selected ? { note: i18n.text(selected.description) } : {}),
       hint: this.touch ? ui.shopHintTouch : ui.shopHintKeyboard,
       buttons: [
-        { label: ui.buyButton, onPress: () => session.buySelected() },
+        {
+          label: selling ? ui.sellButton : ui.buyButton,
+          onPress: () => session.confirmShopEntry(),
+        },
+        {
+          label: selling ? ui.toBuyMode : ui.toSellMode,
+          onPress: () => session.setShopMode(selling ? 'buy' : 'sell'),
+        },
         { label: ui.closeButton, onPress: () => session.closeShop() },
       ],
     });
+  }
+
+  /** Pause menu: resume, or start a new game after an explicit confirmation. */
+  private renderPause(): void {
+    const { session, i18n } = this;
+    const { ui } = i18n;
+    if (!session.paused) {
+      this.confirmingNewGame = false;
+      return this.pausePanel.render(null);
+    }
+    if (this.confirmingNewGame) {
+      return this.pausePanel.render({
+        title: ui.newGameButton,
+        rows: [],
+        selected: null,
+        emptyText: '',
+        note: ui.newGameWarning,
+        buttons: [
+          { label: ui.confirmNewGame, onPress: () => this.startNewGame() },
+          {
+            label: ui.cancelButton,
+            onPress: () => {
+              this.confirmingNewGame = false;
+              this.render();
+            },
+          },
+        ],
+      });
+    }
+    const { day } = session.environment;
+    const done = Object.values(session.quests).filter((q) => q.status === 'completed').length;
+    this.pausePanel.render({
+      title: ui.pausedTitle,
+      titleDetail: `v${config.version}`,
+      rows: [],
+      selected: null,
+      emptyText: '',
+      note: ui.pausedSummary(
+        day,
+        ui.money(session.state.money),
+        done,
+        Object.keys(CONTENT.quests).length,
+      ),
+      ...(this.touch ? {} : { hint: ui.pauseHintKeyboard }),
+      buttons: [
+        { label: ui.resumeButton, onPress: () => session.setPaused(false) },
+        {
+          label: ui.newGameButton,
+          onPress: () => {
+            this.confirmingNewGame = true;
+            this.render();
+          },
+        },
+      ],
+    });
+  }
+
+  /** Erases the save and restarts from a clean page, so no old state can linger in memory. */
+  private startNewGame(): void {
+    const { save } = getServices(this);
+    save.disable(); // stop the page-hide autosave from writing the old game back
+    save.clear();
+    window.location.reload();
   }
 
   private renderBag(): void {
@@ -252,6 +344,7 @@ export class UIScene extends Phaser.Scene {
   private layout(): void {
     const { width, height } = this.scale;
     this.bagButton.setPosition(this.languageButton.x + this.languageButton.width + 8, MARGIN);
+    this.menuButton.setPosition(this.bagButton.x + this.bagButton.width + 8, MARGIN);
     this.prompt.setPosition(width / 2, height - MARGIN * 2);
     this.money.setPosition(width - MARGIN, MARGIN);
     this.clock.setPosition(width - MARGIN, MARGIN + this.money.height + 8);
@@ -271,13 +364,14 @@ export class UIScene extends Phaser.Scene {
       }
     }
     this.tracker.setPosition(width - MARGIN, trackerTop);
-    const languageRight = this.bagButton.x + this.bagButton.width;
+    const languageRight = this.menuButton.x + this.menuButton.width;
     this.tracker.setWordWrapWidth(Math.min(320, width - languageRight - MARGIN * 2));
 
     this.actionButton?.placeBottomRight(width, height);
     this.dialogue.layout();
     this.shopPanel.layout();
     this.bagPanel.layout();
+    this.pausePanel.layout();
   }
 
   private showHint(): void {

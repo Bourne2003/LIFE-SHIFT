@@ -4,6 +4,8 @@ import {
   STARTING_MONEY,
   applyEffects,
   buyItem,
+  sellItem,
+  sellPrice,
   changeItem,
   conditionHolds,
   itemCount,
@@ -54,6 +56,32 @@ describe('buyItem', () => {
       reason: 'not-enough-money',
     });
     expect(buyItem(INITIAL_STATE, shop, 'gold')).toEqual({ ok: false, reason: 'not-for-sale' });
+  });
+});
+
+describe('sellItem', () => {
+  const shop: ShopDef = { id: 's', name: t('S'), stock: [{ item: 'tea', price: 15 }] };
+
+  it('buys back at half price, rounded down', () => {
+    expect(sellPrice(shop, 'tea')).toBe(7);
+    const r = sellItem({ ...INITIAL_STATE, inventory: { tea: 2 } }, shop, 'tea');
+    expect(r.ok && r.state.money).toBe(STARTING_MONEY + 7);
+    expect(r.ok && r.state.inventory).toEqual({ tea: 1 });
+  });
+
+  it('refuses items it does not stock or the player does not have', () => {
+    expect(sellItem({ ...INITIAL_STATE, inventory: { curry: 1 } }, shop, 'curry')).toEqual({
+      ok: false,
+      reason: 'not-wanted',
+    });
+    expect(sellItem(INITIAL_STATE, shop, 'tea')).toEqual({ ok: false, reason: 'not-owned' });
+  });
+
+  it('never turns a profit on a buy-then-sell round trip', () => {
+    const bought = buyItem(INITIAL_STATE, shop, 'tea');
+    if (!bought.ok) throw new Error();
+    const sold = sellItem(bought.state, shop, 'tea');
+    expect(sold.ok && sold.state.money).toBeLessThan(STARTING_MONEY);
   });
 });
 

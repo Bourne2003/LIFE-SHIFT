@@ -29,13 +29,23 @@ export class SaveService {
     this.loaded = this.read();
   }
 
+  private disabled = false;
+
   get available(): boolean {
     return this.store !== null;
   }
 
+  /**
+   * Stops all further writes, e.g. before a new game reloads the page (otherwise the autosave on
+   * page hide would write the old game straight back).
+   */
+  disable(): void {
+    this.disabled = true;
+  }
+
   /** Writes the state; returns false if it could not be stored. */
   write(state: GameState, player: Vec2 | null): boolean {
-    if (!this.store) return false;
+    if (!this.store || this.disabled) return false;
     try {
       this.store.setItem(SAVE_KEY, serializeSave(state, player));
       return true;

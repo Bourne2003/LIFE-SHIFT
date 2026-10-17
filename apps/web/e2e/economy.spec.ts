@@ -82,7 +82,7 @@ test('touch: shop and bag work with taps', async ({ page, isMobile }) => {
   await page.touchscreen.tap(tea.x, tea.y);
   await expect.poll(async () => (await shop(page))?.selected).toBe(1);
   expect((await state(page)).inventory).toEqual({});
-  const [buy, close] = (await controls(page)).shop!.buttons;
+  const [buy, , close] = (await controls(page)).shop!.buttons; // Buy · Sell items · Close
   await page.touchscreen.tap(buy!.x, buy!.y);
   await expect.poll(async () => (await state(page)).inventory).toEqual({ 'thai-iced-tea': 1 });
   await page.touchscreen.tap(close!.x, close!.y);
