@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { NPCS } from '@life-shift/game-data';
 import { TILE_SIZE, tileFeet } from '@life-shift/shared';
 import { PREVIEW_URL } from './urls';
-import { cameraState, npcState, openGame, playerPos, trackErrors } from './helpers';
+import { cameraState, npcState, openGame, playerPos, teleport, trackErrors } from './helpers';
 
 test('canvas fills the viewport and tracks resizes', async ({ page }) => {
   await openGame(page);
@@ -39,7 +39,6 @@ test('keyboard moves the player and the camera follows', async ({ page, isMobile
 });
 
 test('player cannot leave the world', async ({ page, isMobile }) => {
-  test.slow(); // walks corner to corner
   test.skip(isMobile, 'uses keyboard to drive the player');
   await openGame(page);
   const world = await page.evaluate(() => window.__LIFE_SHIFT__!.world());
@@ -63,10 +62,14 @@ test('player cannot leave the world', async ({ page, isMobile }) => {
     return last.body;
   };
 
+  // Start near each corner: the check is about the world edge, not a long walk across the map
+  // (which takes longer than the poll allows on a slow CI runner).
+  await teleport(page, { x: 96, y: 96 });
   const topLeft = await holdUntilStopped(['ArrowLeft', 'ArrowUp']);
   expect(topLeft.left).toBeCloseTo(0, 0);
   expect(topLeft.top).toBeCloseTo(0, 0);
 
+  await teleport(page, { x: world.width - 64, y: world.height - 40 }); // in the hidden alley
   const bottomRight = await holdUntilStopped(['d', 's']);
   expect(bottomRight.right).toBeCloseTo(world.width, 0);
   expect(bottomRight.bottom).toBeCloseTo(world.height, 0);
