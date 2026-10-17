@@ -16,7 +16,7 @@ export interface ListPanelContent {
   readonly rows: readonly ListRow[];
   /** Highlighted row, or null for a list without selection. */
   readonly selected: number | null;
-  /** Shown instead of rows when there are none. */
+  /** Shown (dimmed) instead of rows when there are none; '' shows nothing. */
   readonly emptyText: string;
   /** Wrapped text under the rows, e.g. the selected item's description. */
   readonly note?: string;
@@ -103,7 +103,9 @@ export class ListPanel {
 
     const items: readonly ListRow[] = content.rows.length
       ? content.rows
-      : [{ label: content.emptyText, dim: true }];
+      : content.emptyText
+        ? [{ label: content.emptyText, dim: true }]
+        : [];
     this.rows = items.map((row, i) => {
       const selected = content.rows.length > 0 && i === content.selected;
       const color = selected ? HIGHLIGHT : row.dim ? '#8a8a8a' : '#ffffff';
