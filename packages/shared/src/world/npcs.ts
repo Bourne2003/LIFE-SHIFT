@@ -15,6 +15,14 @@ export interface NpcDef {
   readonly yTiles: number;
   /** Ordered most specific first; the last option should have no conditions. */
   readonly dialogue: readonly NpcDialogueOption[];
+  /** The NPC is only in the world while these hold (e.g. a cat that has gone home). */
+  readonly presentWhen?: readonly StoryCondition[];
+  /** Placeholder art; defaults to a person. */
+  readonly look?: 'person' | 'cat';
+}
+
+export function isNpcPresent(npc: NpcDef, state: GameState): boolean {
+  return allHold(state, npc.presentWhen);
 }
 
 /** The dialogue id this NPC uses in the current state, or undefined if none applies. */

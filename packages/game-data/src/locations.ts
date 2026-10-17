@@ -1,0 +1,65 @@
+import type { LocationDef } from '@life-shift/shared';
+
+/** Named areas of the vertical-slice city. Buildings are obstacles; areas include their yards. */
+export const LOCATIONS: readonly LocationDef[] = [
+  {
+    id: 'home',
+    name: { th: 'บ้านของฉัน', en: 'My home' },
+    xTiles: 3,
+    yTiles: 3,
+    widthTiles: 8,
+    heightTiles: 6,
+  },
+  {
+    id: 'morning-market',
+    name: { th: 'ตลาดเช้า', en: 'Morning market' },
+    xTiles: 13,
+    yTiles: 5,
+    widthTiles: 10,
+    heightTiles: 8,
+    ground: 'market',
+  },
+  {
+    id: 'daeng-store',
+    name: { th: 'ร้านชำป้าแดง', en: 'Aunt Daeng’s Store' },
+    xTiles: 29,
+    yTiles: 4,
+    widthTiles: 7,
+    heightTiles: 7,
+  },
+  {
+    id: 'clock-plaza',
+    name: { th: 'ลานหอนาฬิกา', en: 'Clock Tower Plaza' },
+    xTiles: 24,
+    yTiles: 13,
+    widthTiles: 7,
+    heightTiles: 8,
+  },
+  {
+    id: 'park',
+    name: { th: 'สวนสาธารณะ', en: 'The park' },
+    xTiles: 4,
+    yTiles: 21,
+    widthTiles: 12,
+    heightTiles: 9,
+    ground: 'park',
+  },
+  {
+    id: 'curry-shop',
+    name: { th: 'ร้านข้าวแกงยายบุญ', en: 'Grandma Boon’s Curry Shop' },
+    xTiles: 27,
+    yTiles: 21,
+    widthTiles: 8,
+    heightTiles: 5,
+  },
+  {
+    id: 'hidden-alley',
+    name: { th: 'ซอยลับหลังร้าน', en: 'The hidden alley' },
+    xTiles: 36,
+    yTiles: 26,
+    widthTiles: 4,
+    heightTiles: 4,
+    ground: 'alley',
+    secret: true,
+  },
+];

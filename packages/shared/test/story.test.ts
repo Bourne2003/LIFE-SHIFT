@@ -195,6 +195,7 @@ describe('validateContent', () => {
     dialogues: { d: dialogue },
     npcs: [{ id: 'n', name: t('N'), xTiles: 0, yTiles: 0, dialogue: [{ dialogue: 'd' }] }],
     items: {},
+    locations: [],
     shops: {},
     props: [
       {
@@ -240,6 +241,7 @@ describe('validateContent', () => {
         },
       ],
       items: {},
+      locations: [],
       shops: {},
       props: [
         { id: 'p', kind: 'noodle-stall', xTiles: 0, yTiles: 0, widthTiles: 1, heightTiles: 1 },
@@ -286,6 +288,7 @@ describe('validateContent', () => {
       ],
       props: [],
       items: {},
+      locations: [],
       shops: {},
     };
     expect(validateContent(content)).toEqual([

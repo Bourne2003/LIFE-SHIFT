@@ -10,6 +10,7 @@ export * from './save/save';
 export * from './shops/shops';
 export * from './state/gameState';
 export * from './world/interaction';
+export * from './world/locations';
 export * from './world/npcs';
 export * from './world/obstacles';
 export * from './world/props';

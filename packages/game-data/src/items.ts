@@ -25,6 +25,22 @@ export const ITEMS: ItemCatalog = {
       en: 'Ripe mango with sweet coconut sticky rice.',
     },
   },
+  'machine-oil': {
+    id: 'machine-oil',
+    name: { th: 'น้ำมันหล่อลื่น', en: 'Machine oil' },
+    description: {
+      th: 'น้ำมันขวดเล็กสำหรับหยอดเฟืองและบานพับที่ฝืด',
+      en: 'A small bottle of oil for stiff gears and hinges.',
+    },
+  },
+  'green-curry': {
+    id: 'green-curry',
+    name: { th: 'แกงเขียวหวาน', en: 'Green curry' },
+    description: {
+      th: 'แกงเขียวหวานไก่ร้อน ๆ ใส่ปิ่นโตจากร้านยายบุญ',
+      en: 'Hot chicken green curry in a tiffin carrier from Grandma Boon’s.',
+    },
+  },
 };
 
 export const SHOPS: ShopCatalog = {
@@ -35,6 +51,7 @@ export const SHOPS: ShopCatalog = {
       { item: 'jasmine-garland', price: 20 },
       { item: 'thai-iced-tea', price: 15 },
       { item: 'mango-sticky-rice', price: 35 },
+      { item: 'machine-oil', price: 25 },
     ],
   },
 };
