@@ -14,6 +14,13 @@ rains — and people notice. Explore seven named places (one of them secret), me
 finish 5 quests. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
+## Play online
+
+**▶ https://bourne2003.github.io/LIFE-SHIFT/** — runs in any modern desktop or mobile browser, no
+install. Every push to `main` is tested and published automatically (see
+[ADR-006](docs/decisions/ADR-006-github-pages-playtest.md)). Progress is saved in your browser; the
+pause menu shows the build version to quote in bug reports.
+
 ## Quick start
 
 Requires Node.js 22.12+ (see `.nvmrc`).

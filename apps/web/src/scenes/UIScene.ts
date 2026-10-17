@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { CONTENT } from '@life-shift/game-data';
+import { config } from '../config';
 import { SceneKeys } from '../game/sceneKeys';
 import { getServices } from '../game/services';
 import type { GameSession, SessionEvent } from '../game/session';
@@ -289,6 +290,7 @@ export class UIScene extends Phaser.Scene {
     const done = Object.values(session.quests).filter((q) => q.status === 'completed').length;
     this.pausePanel.render({
       title: ui.pausedTitle,
+      titleDetail: `v${config.version}`,
       rows: [],
       selected: null,
       emptyText: '',
