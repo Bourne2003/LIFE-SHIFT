@@ -23,7 +23,9 @@ export interface DebugApi {
   };
   world(): { width: number; height: number };
   camera(): { scrollX: number; scrollY: number; zoom: number; width: number; height: number };
-  npcs(): { id: string; name: LocalizedText; x: number; y: number }[];
+  npcs(): { id: string; name: LocalizedText; x: number; y: number; present: boolean }[];
+  /** Id of the named place the player is in, if any. */
+  location(): string | null;
   /** Id of the NPC the player can talk to right now. */
   nearbyNpc(): string | null;
   dialogue(): ConversationView | null;
@@ -94,6 +96,7 @@ export function installDebugApi(game: Phaser.Game): void {
       };
     },
     npcs: () => world().npcs.slice(),
+    location: () => session().location?.id ?? null,
     nearbyNpc: () => session().nearbyNpc?.id ?? null,
     dialogue: () => session().conversation,
     quests: () => session().quests,

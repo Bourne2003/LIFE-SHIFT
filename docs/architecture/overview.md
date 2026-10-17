@@ -10,7 +10,7 @@ npm workspaces monorepo (see [ADR-002](../decisions/ADR-002-stack-and-monorepo.m
 | `packages/shared`    | Browser + Node | Types, pure rules (movement, game state, dialogue, save format). |
 | `apps/server`        | Node (planned) | Authoritative multiplayer server — milestone 4                   |
 | `packages/protocol`  | Both (planned) | Client/server message schemas — milestone 4                      |
-| `packages/game-data` | Browser + Node | NPCs, dialogue, quests, world props (items later). Data only.    |
+| `packages/game-data` | Browser + Node | NPCs, dialogue, quests, items, shops, props, places. Data only.  |
 
 Rule: browser code may import `shared`, `protocol`, `game-data`; it must never import
 `apps/server`. Internal packages export TypeScript source directly (no build step).
@@ -86,6 +86,11 @@ deterministic and never saved). Content tests it with conditions
 a shop (`opensShop`); buying is the pure `buyItem` rule, so a server can enforce it later. A quest's `onComplete` effects are its consequence for the world, e.g.
 Mina's Recipe sets `somchai-stall-open`, which shows the noodle-stall **world prop** and changes
 what several NPCs say.
+
+**Places** (`LocationDef`) are named areas; the world scene tells the session which one the player
+stands in, the UI announces it, and the first visit sets a `visited:<id>` flag (secret places are
+announced as discoveries). **NPC presence** (`presentWhen`) lets story state move people around,
+e.g. Ton's cat is in the hidden alley until found, then sits next to Ton.
 
 Time runs in `GameSession.tick()` (1 in-game minute per real second, paused while talking or
 shopping). Crossing into a new phase (morning/day/evening/night) or day counts as a state change,

@@ -47,8 +47,11 @@ stable.
 
 Inventory and a basic shop economy (money, Aunt Daeng's store, quest rewards) are in, completing
 the MVP definition below. Day/night (24-minute days, lit park lanterns) and clear/rain weather are
-in too. Before milestone 4 the vertical slice still needs more city locations (player home, market,
-restaurant, park, hidden place, landmark), ~10 NPCs and ~5 quests (currently 6 NPCs, 2 quests).
+in too. The city now has named places (home, morning market, Aunt Daeng's store, clock-tower
+landmark, park, Grandma Boon's curry shop and a secret alley), 10 NPCs and 5 quests, three of
+which change the world (noodle stall, clock tower, a cat that goes home). The vertical slice is
+content-complete; next is polish (art, sound, a pause/new-game menu, selling items) before
+milestone 4.
 
 ## MVP definition (end of milestone 3 + shop)
 

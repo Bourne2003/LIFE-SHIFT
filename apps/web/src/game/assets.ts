@@ -11,5 +11,10 @@ export const TextureKeys = {
   Building: 'building',
   NoodleStall: 'noodle-stall',
   Lantern: 'lantern',
+  ClockFace: 'clock-face',
+  Cat: 'cat',
+  ParkGround: 'park-ground',
+  MarketGround: 'market-ground',
+  AlleyGround: 'alley-ground',
   LightGlow: 'light-glow',
 } as const;

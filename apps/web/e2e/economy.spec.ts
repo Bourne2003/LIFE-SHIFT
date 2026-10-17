@@ -75,7 +75,7 @@ test('touch: shop and bag work with taps', async ({ page, isMobile }) => {
   await expect.poll(async () => (await controls(page)).dialogueChoices.length).toBe(2);
   const [browse] = (await controls(page)).dialogueChoices;
   await page.touchscreen.tap(browse!.x, browse!.y);
-  await expect.poll(async () => (await controls(page)).shop?.rows.length).toBe(3);
+  await expect.poll(async () => (await controls(page)).shop?.rows.length).toBe(4);
 
   // Tapping a row only selects it; the Buy button buys.
   const tea = (await controls(page)).shop!.rows[1]!;

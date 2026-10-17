@@ -6,6 +6,8 @@ import {
   buyItem,
   darkness,
   dayPhase,
+  isNpcPresent,
+  visitedFlag,
   weatherForDay,
   currentStep,
   isPropVisible,
@@ -15,6 +17,7 @@ import {
   type DialogueDef,
   type GameContent,
   type GameState,
+  type LocationDef,
   type LocalizedText,
   type NpcDef,
   type QuestLog,
@@ -86,6 +89,8 @@ export type SessionEvent =
     }
   | { readonly type: 'purchased'; readonly item: LocalizedText; readonly price: number }
   | { readonly type: 'cannotAfford'; readonly item: LocalizedText }
+  /** The player walked into a named place; `discovered` on the first visit to a secret one. */
+  | { readonly type: 'locationEntered'; readonly name: LocalizedText; readonly discovered: boolean }
   /** The in-game clock passed a minute (HUD clock). */
   | { readonly type: 'clockTick' }
   /** Money went up (e.g. a quest reward). */
@@ -111,6 +116,7 @@ export class GameSession {
   private convo: Conversation | null = null;
   private shop: { readonly def: ShopDef; readonly selected: number } | null = null;
   private _inventoryOpen = false;
+  private _location: LocationDef | null = null;
   private readonly listeners = new Set<(event: SessionEvent) => void>();
   private readonly npcsById: ReadonlyMap<string, NpcDef>;
 
@@ -135,6 +141,34 @@ export class GameSession {
   /** World props that should be shown in the current state. */
   get visibleProps(): WorldPropDef[] {
     return this.content.props.filter((p) => isPropVisible(p, this._state));
+  }
+
+  /** NPCs currently in the world (some only appear in certain story states). */
+  get presentNpcs(): NpcDef[] {
+    return this.content.npcs.filter((n) => isNpcPresent(n, this._state));
+  }
+
+  get location(): LocationDef | null {
+    return this._location;
+  }
+
+  /**
+   * Tells the session which place the player is in (null between places). Entering a place
+   * announces it; the first visit sets its `visited:` flag, which content can test.
+   */
+  setLocation(id: string | null): void {
+    if ((this._location?.id ?? null) === id) return;
+    const loc = id === null ? null : (this.content.locations.find((l) => l.id === id) ?? null);
+    this._location = loc;
+    if (!loc) return;
+    const flag = visitedFlag(loc.id);
+    const firstVisit = !this._state.flags[flag];
+    if (firstVisit) this.commit({ ...this._state, flags: { ...this._state.flags, [flag]: true } });
+    this.emit({
+      type: 'locationEntered',
+      name: loc.name,
+      discovered: firstVisit && !!loc.secret,
+    });
   }
 
   get nearbyNpc(): { readonly id: string; readonly name: LocalizedText } | null {
@@ -302,7 +336,7 @@ export class GameSession {
   /** Starts talking to an NPC. Returns false if it does not exist or a conversation is open. */
   talkTo(npcId: string): boolean {
     const npc = this.npcsById.get(npcId);
-    if (!npc || this.convo) return false;
+    if (!npc || this.convo || !isNpcPresent(npc, this._state)) return false;
     // Choose the dialogue before remembering this talk, so a first meeting is a first meeting.
     const dialogueId = selectNpcDialogue(npc, this._state);
     const dialogue = dialogueId === undefined ? undefined : this.content.dialogues[dialogueId];
