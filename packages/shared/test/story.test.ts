@@ -194,6 +194,8 @@ describe('validateContent', () => {
     quests,
     dialogues: { d: dialogue },
     npcs: [{ id: 'n', name: t('N'), xTiles: 0, yTiles: 0, dialogue: [{ dialogue: 'd' }] }],
+    items: {},
+    shops: {},
     props: [
       {
         id: 'p',
@@ -237,6 +239,8 @@ describe('validateContent', () => {
           dialogue: [{ when: [{ quest: 'zzz', status: 'active' }], dialogue: 'd' }],
         },
       ],
+      items: {},
+      shops: {},
       props: [
         { id: 'p', kind: 'noodle-stall', xTiles: 0, yTiles: 0, widthTiles: 1, heightTiles: 1 },
         {
@@ -281,6 +285,8 @@ describe('validateContent', () => {
         },
       ],
       props: [],
+      items: {},
+      shops: {},
     };
     expect(validateContent(content)).toEqual([
       'quest "q" title: missing translation (en)',

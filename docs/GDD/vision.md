@@ -45,7 +45,10 @@ Multiplayer order: local single-player → local server → LAN → Internet →
 persistent world. Multiplayer stays behind `VITE_MULTIPLAYER_ENABLED` until single-player is
 stable.
 
-Next up: inventory and a basic shop economy, which complete the MVP below before milestone 4.
+Inventory and a basic shop economy (money, Aunt Daeng's store, quest rewards) are in, completing
+the MVP definition below. Day/night (24-minute days, lit park lanterns) and clear/rain weather are
+in too. Before milestone 4 the vertical slice still needs more city locations (player home, market,
+restaurant, park, hidden place, landmark), ~10 NPCs and ~5 quests (currently 6 NPCs, 2 quests).
 
 ## MVP definition (end of milestone 3 + shop)
 

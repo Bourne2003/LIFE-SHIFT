@@ -11,6 +11,8 @@ export interface DialogueChoice {
   /** Node to continue with; omitted ends the conversation. */
   readonly next?: string;
   readonly effects?: readonly StoryEffect[];
+  /** Opens this shop when chosen (normally on a choice without `next`). */
+  readonly opensShop?: string;
 }
 
 export interface DialogueNode {

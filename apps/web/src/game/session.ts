@@ -2,6 +2,11 @@ import {
   advanceDialogue,
   beginDialogue,
   INITIAL_STATE,
+  advanceClock,
+  buyItem,
+  darkness,
+  dayPhase,
+  weatherForDay,
   currentStep,
   isPropVisible,
   reconcileState,
@@ -13,6 +18,10 @@ import {
   type LocalizedText,
   type NpcDef,
   type QuestLog,
+  type DayPhase,
+  type GameClock,
+  type ShopDef,
+  type Weather,
   type WorldPropDef,
 } from '@life-shift/shared';
 
@@ -32,6 +41,39 @@ export interface TrackedQuest {
   readonly step: LocalizedText;
 }
 
+/** What the shop UI shows. */
+export interface ShopView {
+  readonly shopId: string;
+  readonly name: LocalizedText;
+  readonly money: number;
+  readonly entries: readonly {
+    readonly item: string;
+    readonly name: LocalizedText;
+    readonly description: LocalizedText;
+    readonly price: number;
+    readonly owned: number;
+    readonly affordable: boolean;
+  }[];
+  readonly selected: number;
+}
+
+export interface InventoryEntry {
+  readonly item: string;
+  readonly name: LocalizedText;
+  readonly description: LocalizedText;
+  readonly count: number;
+}
+
+/** Time and weather as the world should look right now. */
+export interface EnvironmentView {
+  readonly day: number;
+  readonly minute: number;
+  readonly phase: DayPhase;
+  readonly weather: Weather;
+  /** Night overlay opacity, 0 by day. */
+  readonly darkness: number;
+}
+
 export type SessionEvent =
   /** Anything the UI shows changed (nearby NPC, conversation, game state). */
   | { readonly type: 'changed' }
@@ -41,7 +83,13 @@ export type SessionEvent =
       readonly type: 'questStarted' | 'questCompleted';
       readonly quest: string;
       readonly title: LocalizedText;
-    };
+    }
+  | { readonly type: 'purchased'; readonly item: LocalizedText; readonly price: number }
+  | { readonly type: 'cannotAfford'; readonly item: LocalizedText }
+  /** The in-game clock passed a minute (HUD clock). */
+  | { readonly type: 'clockTick' }
+  /** Money went up (e.g. a quest reward). */
+  | { readonly type: 'moneyReceived'; readonly amount: number };
 
 interface Conversation {
   readonly npc: NpcDef;
@@ -61,6 +109,8 @@ export class GameSession {
   private _state: GameState;
   private nearby: NpcDef | null = null;
   private convo: Conversation | null = null;
+  private shop: { readonly def: ShopDef; readonly selected: number } | null = null;
+  private _inventoryOpen = false;
   private readonly listeners = new Set<(event: SessionEvent) => void>();
   private readonly npcsById: ReadonlyMap<string, NpcDef>;
 
@@ -70,7 +120,7 @@ export class GameSession {
     initial: GameState = INITIAL_STATE,
   ) {
     this.npcsById = new Map(content.npcs.map((n) => [n.id, n]));
-    this._state = reconcileState(initial, content.quests);
+    this._state = reconcileState(initial, content);
   }
 
   /** The persistent game state (what a save contains). */
@@ -95,6 +145,91 @@ export class GameSession {
     return this.convo !== null;
   }
 
+  get inShop(): boolean {
+    return this.shop !== null;
+  }
+
+  get inventoryOpen(): boolean {
+    return this._inventoryOpen;
+  }
+
+  get shopView(): ShopView | null {
+    if (!this.shop) return null;
+    const { def, selected } = this.shop;
+    const { money, inventory } = this._state;
+    return {
+      shopId: def.id,
+      name: def.name,
+      money,
+      selected,
+      entries: def.stock.map(({ item, price }) => {
+        const itemDef = this.content.items[item]!;
+        return {
+          item,
+          name: itemDef.name,
+          description: itemDef.description,
+          price,
+          owned: inventory[item] ?? 0,
+          affordable: money >= price,
+        };
+      }),
+    };
+  }
+
+  /** What the player carries, in catalogue order. */
+  get inventory(): InventoryEntry[] {
+    return Object.values(this.content.items).flatMap((item) => {
+      const count = this._state.inventory[item.id] ?? 0;
+      return count > 0
+        ? [{ item: item.id, name: item.name, description: item.description, count }]
+        : [];
+    });
+  }
+
+  toggleInventory(open = !this._inventoryOpen): void {
+    if (open === this._inventoryOpen) return;
+    this._inventoryOpen = open;
+    this.emit({ type: 'changed' });
+  }
+
+  openShop(shopId: string): boolean {
+    const def = this.content.shops[shopId];
+    if (!def || this.convo) return false;
+    this.shop = { def, selected: 0 };
+    this._inventoryOpen = false;
+    this.emit({ type: 'changed' });
+    return true;
+  }
+
+  closeShop(): void {
+    if (!this.shop) return;
+    this.shop = null;
+    this.emit({ type: 'changed' });
+  }
+
+  /** Highlights a shop entry (e.g. tapped). */
+  selectShopEntry(index: number): void {
+    if (!this.shop || !Number.isInteger(index)) return;
+    if (index < 0 || index >= this.shop.def.stock.length) return;
+    this.shop = { ...this.shop, selected: index };
+    this.emit({ type: 'changed' });
+  }
+
+  /** Buys one of the highlighted shop entry. */
+  buySelected(): void {
+    const shop = this.shop;
+    const entry = shop?.def.stock[shop.selected];
+    if (!shop || !entry) return;
+    const name = this.content.items[entry.item]!.name;
+    const result = buyItem(this._state, shop.def, entry.item);
+    if (!result.ok) {
+      this.emit({ type: 'cannotAfford', item: name });
+      return;
+    }
+    this.commit(result.state);
+    this.emit({ type: 'purchased', item: name, price: result.price });
+  }
+
   get conversation(): ConversationView | null {
     const c = this.convo;
     if (!c) return null;
@@ -106,6 +241,40 @@ export class GameSession {
       choices: node.choices?.map((ch) => ch.text) ?? [],
       selected: c.selected,
     };
+  }
+
+  get environment(): EnvironmentView {
+    const { day, minute } = this._state.clock;
+    return {
+      day,
+      minute,
+      phase: dayPhase(minute),
+      weather: weatherForDay(day),
+      darkness: darkness(minute),
+    };
+  }
+
+  /**
+   * Lets world time pass. Time stands still while talking or shopping. Crossing into a new time
+   * of day or a new day counts as a state change (lanterns light up, NPCs say other things).
+   */
+  tick(realSeconds: number): void {
+    if (this.convo || this.shop) return;
+    const before = this._state.clock;
+    const clock = advanceClock(before, realSeconds);
+    if (clock === before) return;
+    this._state = { ...this._state, clock };
+    if (Math.floor(clock.minute) !== Math.floor(before.minute) || clock.day !== before.day)
+      this.emit({ type: 'clockTick' });
+    if (clock.day !== before.day || dayPhase(clock.minute) !== dayPhase(before.minute))
+      this.commit(this._state, before);
+  }
+
+  /** Sets the clock directly (debugging and tests). */
+  setClock(clock: GameClock): void {
+    const before = this._state;
+    this.commit({ ...before, clock }, before.clock);
+    this.emit({ type: 'clockTick' });
   }
 
   /** Active quests with the description of their current step, for the HUD. */
@@ -159,8 +328,15 @@ export class GameSession {
     if (c && Number.isInteger(index) && index >= 0 && index < count) this.step(c, index);
   }
 
-  /** Moves the choice highlight, wrapping around. */
+  /** Moves the highlight (dialogue choice or shop entry), wrapping around. */
   moveSelection(delta: number): void {
+    if (this.shop) {
+      const count = this.shop.def.stock.length;
+      const selected = (((this.shop.selected + delta) % count) + count) % count;
+      this.shop = { ...this.shop, selected };
+      this.emit({ type: 'changed' });
+      return;
+    }
     const c = this.convo;
     const count = c ? (c.dialogue.nodes[c.node]?.choices?.length ?? 0) : 0;
     if (!c || count === 0) return;
@@ -169,16 +345,28 @@ export class GameSession {
   }
 
   private step(c: Conversation, choice: number | undefined): void {
+    const chosen = choice === undefined ? undefined : c.dialogue.nodes[c.node]?.choices?.[choice];
     const next = advanceDialogue(c.dialogue, c.node, this._state, this.content.quests, choice);
     this.update(next.state, next.node === null ? null : { ...c, node: next.node, selected: 0 });
+    if (chosen?.opensShop && next.node === null) this.openShop(chosen.opensShop);
   }
 
   private update(state: GameState, convo: Conversation | null): void {
-    const before = this._state;
-    this._state = state;
     this.convo = convo;
+    this.commit(state);
+  }
+
+  /**
+   * Replaces the game state and announces what changed. `clockBefore` marks a change that
+   * happened through the clock, where the state object was already updated in place.
+   */
+  private commit(state: GameState, clockBefore?: GameClock): void {
+    const before = clockBefore ? { ...state, clock: clockBefore } : this._state;
+    this._state = state;
     this.emit({ type: 'changed' });
     if (state === before) return;
+    if (state.money > before.money)
+      this.emit({ type: 'moneyReceived', amount: state.money - before.money });
     this.emit({ type: 'stateChanged' });
     for (const quest of Object.values(this.content.quests)) {
       const was = before.quests[quest.id]?.status;

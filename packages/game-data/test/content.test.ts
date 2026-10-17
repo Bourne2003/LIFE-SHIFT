@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   INITIAL_STATE,
+  STARTING_MONEY,
   WORLD_OBSTACLES,
+  buyItem,
   advanceDialogue,
   beginDialogue,
   isPropVisible,
@@ -9,9 +11,10 @@ import {
   recordTalk,
   selectNpcDialogue,
   validateContent,
+  weatherForDay,
   type GameState,
 } from '@life-shift/shared';
-import { CONTENT, DIALOGUES, NPCS, PROPS, QUESTS } from '../src';
+import { CONTENT, DIALOGUES, NPCS, PROPS, QUESTS, SHOPS } from '../src';
 
 type Rect = { x: number; y: number; w: number; h: number };
 const overlaps = (a: Rect, b: Rect) =>
@@ -89,6 +92,32 @@ describe('game content', () => {
     expect(dialogueOf('somchai', s)).toBe('somchai-stall');
     expect(dialogueOf('nida', s)).toBe('nida-stall');
     expect(dialogueOf('alex', s)).toBe('alex-stall');
+    expect(s.money).toBe(STARTING_MONEY + 40); // quest reward
+  });
+
+  it("Pim's garland: buy at Aunt Daeng's, deliver, get paid", () => {
+    let s: GameState = talk('pim', INITIAL_STATE, 1);
+    expect(s.quests).toEqual({}); // declined
+    s = talk('pim', s);
+    expect(dialogueOf('pim', s)).toBe('pim-waiting'); // no garland yet
+
+    const shop = SHOPS['daeng-store']!;
+    const price = shop.stock.find((e) => e.item === 'jasmine-garland')!.price;
+    const bought = buyItem(s, shop, 'jasmine-garland');
+    if (!bought.ok) throw new Error(bought.reason);
+    s = bought.state;
+    expect(dialogueOf('pim', s)).toBe('pim-receive');
+
+    s = talk('pim', s);
+    expect(questStatus(s.quests, 'pims-garland')).toBe('completed');
+    expect(s.inventory).toEqual({}); // the garland was handed over
+    expect(s.money).toBe(STARTING_MONEY - price + 30);
+    expect(dialogueOf('pim', s)).toBe('pim-after');
+  });
+
+  it('a new player can afford anything Aunt Daeng sells', () => {
+    for (const { item, price } of SHOPS['daeng-store']!.stock)
+      expect(price, item).toBeLessThanOrEqual(STARTING_MONEY);
   });
 
   it('NPCs remember meeting the player', () => {
@@ -96,5 +125,31 @@ describe('game content', () => {
     const s = talk('alex', INITIAL_STATE);
     expect(s.npcs.alex).toEqual({ talks: 1 });
     expect(dialogueOf('alex', s)).toBe('alex-again');
+  });
+
+  it('the city reacts to time of day and weather', () => {
+    const at = (day: number, hour: number): GameState => ({
+      ...INITIAL_STATE,
+      clock: { day, minute: hour * 60 },
+    });
+    const lanterns = PROPS.filter((p) => p.kind === 'lantern');
+    expect(lanterns.length).toBeGreaterThan(0);
+    for (const l of lanterns) {
+      expect(isPropVisible(l, at(1, 12)), l.id).toBe(false);
+      expect(isPropVisible(l, at(1, 21)), l.id).toBe(true);
+    }
+
+    const done: GameState = {
+      ...at(1, 21),
+      quests: { 'pims-garland': { status: 'completed' } },
+    };
+    expect(dialogueOf('pim', done)).toBe('pim-night');
+    expect(dialogueOf('pim', { ...done, clock: { day: 1, minute: 12 * 60 } })).toBe('pim-after');
+
+    const rainyDay = Array.from({ length: 50 }, (_, i) => i + 2).find(
+      (d) => weatherForDay(d) === 'rain',
+    )!;
+    expect(dialogueOf('nida', at(rainyDay, 12))).toBe('nida-rain');
+    expect(dialogueOf('nida', at(1, 12))).toBe('nida-greeting');
   });
 });

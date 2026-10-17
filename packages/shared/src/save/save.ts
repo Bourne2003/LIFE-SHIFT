@@ -1,9 +1,16 @@
 import type { Vec2 } from '../math/vector';
 import type { QuestLog, QuestProgress } from '../quests/quests';
-import type { GameState, NpcMemory, QuestCatalog } from '../state/gameState';
+import type { Inventory, ItemCatalog } from '../items/items';
+import { MINUTES_PER_DAY, START_CLOCK, type GameClock } from '../world/time';
+import {
+  STARTING_MONEY,
+  type GameState,
+  type NpcMemory,
+  type QuestCatalog,
+} from '../state/gameState';
 
 /** Bump when the save shape changes, and add a migration from the previous version. */
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 3;
 
 export interface SaveData {
   readonly version: number;
@@ -17,21 +24,34 @@ export interface SaveData {
 export type ParseResult =
   { readonly ok: true; readonly save: SaveData } | { readonly ok: false; readonly error: string };
 
+const isRecord = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
 /**
  * Upgraders from version N to N+1, applied in order to old saves. Each takes the raw object of
  * version N and returns the raw object of version N+1.
  */
 const MIGRATIONS: Readonly<
   Record<number, (raw: Record<string, unknown>) => Record<string, unknown>>
-> = {};
+> = {
+  // v2 added money and inventory: players continue with the starting purse and empty bags.
+  1: (raw) => ({
+    ...raw,
+    version: 2,
+    state: { ...(isRecord(raw.state) ? raw.state : {}), money: STARTING_MONEY, inventory: {} },
+  }),
+  // v3 added the world clock: older saves resume on day 1 at 08:00.
+  2: (raw) => ({
+    ...raw,
+    version: 3,
+    state: { ...(isRecord(raw.state) ? raw.state : {}), clock: START_CLOCK },
+  }),
+};
 
 export function serializeSave(state: GameState, player: Vec2 | null, now = new Date()): string {
   const data: SaveData = { version: SAVE_VERSION, savedAt: now.toISOString(), state, player };
   return JSON.stringify(data);
 }
-
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /**
  * Reads a save written by any released version. Never throws: corrupt or foreign data is reported
@@ -68,6 +88,9 @@ export function parseSave(json: string): ParseResult {
         quests: readQuests(state.quests),
         flags: readFlags(state.flags),
         npcs: readNpcs(state.npcs),
+        money: readMoney(state.money),
+        inventory: readInventory(state.inventory),
+        clock: readClock(state.clock),
       },
       player: readPoint(data.player),
     },
@@ -103,6 +126,26 @@ function readNpcs(raw: unknown): Record<string, NpcMemory> {
   return out;
 }
 
+function readMoney(raw: unknown): number {
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 0 ? raw : STARTING_MONEY;
+}
+
+function readInventory(raw: unknown): Inventory {
+  const out: Record<string, number> = {};
+  if (!isRecord(raw)) return out;
+  for (const [id, n] of Object.entries(raw))
+    if (typeof n === 'number' && Number.isInteger(n) && n > 0) out[id] = n;
+  return out;
+}
+
+function readClock(raw: unknown): GameClock {
+  if (!isRecord(raw)) return START_CLOCK;
+  const { day, minute } = raw;
+  const dayOk = typeof day === 'number' && Number.isInteger(day) && day >= 1;
+  const minuteOk = typeof minute === 'number' && minute >= 0 && minute < MINUTES_PER_DAY;
+  return dayOk && minuteOk ? { day, minute } : START_CLOCK;
+}
+
 function readPoint(raw: unknown): Vec2 | null {
   if (!isRecord(raw)) return null;
   const { x, y } = raw;
@@ -112,10 +155,15 @@ function readPoint(raw: unknown): Vec2 | null {
 }
 
 /**
- * Makes a loaded state consistent with the current content: quests that no longer exist are
- * dropped, and an active quest whose step was removed restarts at its first step.
+ * Makes a loaded state consistent with the current content: quests and items that no longer
+ * exist are dropped, and an active quest whose step was removed restarts at its first step.
  */
-export function reconcileState(state: GameState, quests: QuestCatalog): GameState {
+export function reconcileState(
+  state: GameState,
+  content: { readonly quests: QuestCatalog; readonly items: ItemCatalog },
+): GameState {
+  const { quests, items } = content;
+  const inventory = Object.fromEntries(Object.entries(state.inventory).filter(([id]) => items[id]));
   const fixed: Record<string, QuestProgress> = {};
   for (const [id, progress] of Object.entries(state.quests)) {
     const quest = quests[id];
@@ -125,5 +173,5 @@ export function reconcileState(state: GameState, quests: QuestCatalog): GameStat
       if (first) fixed[id] = { status: 'active', step: first.id };
     } else fixed[id] = progress;
   }
-  return { ...state, quests: fixed };
+  return { ...state, quests: fixed, inventory };
 }

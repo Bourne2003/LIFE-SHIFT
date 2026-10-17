@@ -3,12 +3,12 @@ import type { GameState, Locale, LocalizedText, QuestLog } from '@life-shift/sha
 import { SAVE_KEY } from './SaveService';
 import { SceneKeys } from './sceneKeys';
 import { getServices } from './services';
-import type { ConversationView } from './session';
+import type { ConversationView, EnvironmentView, ShopView } from './session';
 import type { UIScene } from '../scenes/UIScene';
 import type { WorldScene } from '../scenes/WorldScene';
 
 /**
- * State snapshots (plus one test hook, teleport) for automated browser tests and console
+ * State snapshots (plus test hooks: teleport, setClock) for automated browser tests and console
  * debugging. Installed in dev builds only; never part of the production bundle.
  */
 export interface DebugApi {
@@ -32,6 +32,15 @@ export interface DebugApi {
   state(): GameState;
   /** Ids of world props currently shown. */
   props(): string[];
+  /** The open shop, if any. */
+  shop(): ShopView | null;
+  inventoryOpen(): boolean;
+  /** Screen positions of the bag button and of open panels' rows and buttons. */
+  controls(): UIScene['controls'];
+  /** Clock, weather and lighting as currently shown. */
+  environment(): EnvironmentView & { nightOpacity: number; raining: boolean };
+  /** Jumps the world clock (dev-only test hook). */
+  setClock(day: number, minute: number): void;
   /** Whether a save exists in storage right now. */
   hasSave(): boolean;
   /** Screen position of the touch interact button, if this device has one. */
@@ -90,6 +99,15 @@ export function installDebugApi(game: Phaser.Game): void {
     quests: () => session().quests,
     state: () => session().state,
     props: () => world().visibleProps,
+    shop: () => session().shopView,
+    inventoryOpen: () => session().inventoryOpen,
+    controls: () => ui().controls,
+    environment: () => ({
+      ...session().environment,
+      nightOpacity: world().nightOpacity,
+      raining: ui().raining,
+    }),
+    setClock: (day, minute) => session().setClock({ day, minute }),
     hasSave: () => window.localStorage.getItem(SAVE_KEY) !== null,
     interactButton: () => {
       const button = ui().interactButton;

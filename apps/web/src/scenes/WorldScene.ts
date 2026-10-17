@@ -27,7 +27,13 @@ const NPC_FEET_H = 10;
 /** Art for each kind of world prop. */
 const PROP_TEXTURES: Record<WorldPropDef['kind'], string> = {
   'noodle-stall': TextureKeys.NoodleStall,
+  lantern: TextureKeys.Lantern,
 };
+
+/** Props that light up the night. */
+const GLOWING: ReadonlySet<WorldPropDef['kind']> = new Set(['lantern']);
+/** Everything in the world is drawn below this; the night overlay and lights go above. */
+const NIGHT_DEPTH = 100_000;
 
 /**
  * The explorable world: roads, obstacles, NPCs the player can talk to, and props that appear or
@@ -37,6 +43,8 @@ export class WorldScene extends Phaser.Scene {
   private services!: GameServices;
   private _player!: Player;
   private propSprites = new Map<string, Phaser.GameObjects.Image>();
+  private glows = new Map<string, Phaser.GameObjects.Image>();
+  private night!: Phaser.GameObjects.Rectangle;
   private npcSprites: {
     id: string;
     name: LocalizedText;
@@ -83,8 +91,21 @@ export class WorldScene extends Phaser.Scene {
         .setDisplaySize(prop.widthTiles * TILE_SIZE, prop.heightTiles * TILE_SIZE)
         .setDepth(bottom);
       this.propSprites.set(prop.id, sprite);
+      if (GLOWING.has(prop.kind)) {
+        const glow = this.add
+          .image(x, bottom - prop.heightTiles * TILE_SIZE * 0.75, TextureKeys.LightGlow)
+          .setBlendMode(Phaser.BlendModes.ADD)
+          .setDepth(NIGHT_DEPTH + 1);
+        this.glows.set(prop.id, glow);
+      }
     }
+    // Darkens the whole world at night; lights (glows) are drawn above it.
+    this.night = this.add
+      .rectangle(0, 0, worldW, worldH, 0x0a1030, 1)
+      .setOrigin(0)
+      .setDepth(NIGHT_DEPTH);
     this.refreshProps();
+    this.refreshLighting();
     const obstacleBodies = this.physics.add.staticGroup();
     this.npcSprites = NPCS.map((npc) => {
       const feet = tileFeet(npc.xTiles, npc.yTiles);
@@ -123,6 +144,7 @@ export class WorldScene extends Phaser.Scene {
     const { session, save } = this.services;
     const offSession = session.on((e) => {
       if (e.type === 'stateChanged') this.refreshProps();
+      if (e.type === 'clockTick') this.refreshLighting();
     });
     const stopAutosave = startAutosave(session, save, () => this._player.feet);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -140,11 +162,37 @@ export class WorldScene extends Phaser.Scene {
   private refreshProps(): void {
     const visible = new Set(this.services.session.visibleProps.map((p) => p.id));
     for (const [id, sprite] of this.propSprites) sprite.setVisible(visible.has(id));
+    for (const [id, glow] of this.glows) glow.setVisible(visible.has(id));
   }
 
-  override update(): void {
+  /** Night overlay strength and lantern glow follow the clock. */
+  private refreshLighting(): void {
+    const { darkness } = this.services.session.environment;
+    this.night.setAlpha(darkness).setVisible(darkness > 0);
+    for (const glow of this.glows.values()) glow.setAlpha(Math.min(1, darkness * 1.6));
+  }
+
+  /** Current night overlay opacity (tests). */
+  get nightOpacity(): number {
+    return this.night.visible ? this.night.alpha : 0;
+  }
+
+  override update(_time: number, deltaMs: number): void {
     const { input, session } = this.services;
+    // Phaser already stops the loop while the tab is hidden; this only guards against a single
+    // huge hitch. Keep it generous so slow devices (a few fps) still get real-time days.
+    session.tick(Math.min(deltaMs, 1000) / 1000);
     const actions = input.consumeActions();
+    if (actions.has('inventory') && !session.inShop) session.toggleInventory();
+
+    if (session.inShop) {
+      this._player.applyIntent(IDLE_INTENT);
+      if (actions.has('navUp')) session.moveSelection(-1);
+      if (actions.has('navDown')) session.moveSelection(1);
+      if (actions.has('interact')) session.buySelected();
+      if (actions.has('cancel')) session.closeShop();
+      return;
+    }
 
     if (session.inConversation) {
       this._player.applyIntent(IDLE_INTENT);
@@ -154,6 +202,7 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    if (actions.has('cancel')) session.toggleInventory(false);
     this._player.applyIntent(input.getMoveIntent());
     const target = findInteractionTarget(this._player.feet, this.npcs);
     session.setNearbyNpc(target?.id ?? null);

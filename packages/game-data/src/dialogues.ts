@@ -30,10 +30,83 @@ const list: readonly DialogueDef[] = [
     th: 'ฉันรอร้านเปิดอยู่น่ะ ได้ยินมาว่ามีของใหม่เข้ามาด้วย',
     en: 'I’m waiting for the shop to open. Rumour says they got new stock.',
   }),
-  line('pim-greeting', {
+  {
+    id: 'pim-ask',
+    start: 'ask',
+    nodes: {
+      ask: {
+        text: {
+          th: 'พรุ่งนี้ฉันจะไปไหว้พระ แต่ยังไม่มีพวงมาลัยเลย… ช่วยซื้อจากร้านป้าแดงมาให้หน่อยได้ไหม? เดี๋ยวให้ค่าเหนื่อยนะ',
+          en: 'I’m visiting the shrine tomorrow but I have no garland… Could you buy one at Aunt Daeng’s for me? I’ll pay you for the trouble.',
+        },
+        choices: [
+          {
+            text: { th: 'ได้สิ เดี๋ยวไปซื้อให้', en: 'Sure, I’ll get one.' },
+            next: 'accepted',
+            effects: [{ type: 'startQuest', quest: 'pims-garland' }],
+          },
+          { text: { th: 'ไว้ก่อนนะ', en: 'Maybe later.' } },
+        ],
+      },
+      accepted: {
+        text: {
+          th: 'ขอบคุณนะ! ร้านป้าแดงอยู่ทางตะวันออก ใต้ตึกใหญ่ทางขวาบน',
+          en: 'Thank you! Aunt Daeng’s store is to the east, below the big building up north.',
+        },
+      },
+    },
+  },
+  line('pim-waiting', {
+    th: 'ร้านป้าแดงอยู่ทางตะวันออก ใต้ตึกใหญ่ทางขวาบนนะ พวงมาลัยราคาไม่แพงหรอก',
+    en: 'Aunt Daeng’s is to the east, below the big building up north. Garlands aren’t expensive.',
+  }),
+  {
+    id: 'pim-receive',
+    start: 'receive',
+    nodes: {
+      receive: {
+        text: {
+          th: 'พวงมาลัยมะลิ! หอมจังเลย ขอบคุณมากนะ นี่ค่าเหนื่อยจ้ะ',
+          en: 'A jasmine garland! It smells wonderful. Thank you — here’s something for your trouble.',
+        },
+        effects: [
+          { type: 'changeItem', item: 'jasmine-garland', count: -1 },
+          { type: 'completeStep', quest: 'pims-garland', step: 'bring' },
+        ],
+      },
+    },
+  },
+  line('pim-after', {
     th: 'เคยเห็นสวนสาธารณะตอนกลางคืนไหม? โคมไฟสวยมากเลยนะ',
     en: 'Have you seen the park at night? The lanterns are beautiful.',
   }),
+  line('pim-night', {
+    th: 'เห็นไหม โคมไฟในสวนเปิดแล้ว สวยอย่างที่บอกใช่ไหมล่ะ',
+    en: 'See? The park lanterns are lit. Beautiful, just like I said.',
+  }),
+  line('nida-rain', {
+    th: 'ฝนตกอีกแล้ว… ร้านคงเปิดช้า ไปหลบฝนใต้ชายคากันเถอะ',
+    en: 'Rain again… the shop will open late. Let’s wait under the eaves.',
+  }),
+  {
+    id: 'daeng-hello',
+    start: 'hello',
+    nodes: {
+      hello: {
+        text: {
+          th: 'มาแล้วเหรอจ๊ะ วันนี้อยากได้อะไรล่ะ?',
+          en: 'Welcome, dear! What can I get you today?',
+        },
+        choices: [
+          { text: { th: 'ขอดูของหน่อย', en: 'Let me see your goods.' }, opensShop: 'daeng-store' },
+          { text: { th: 'แค่แวะมาทักทาย', en: 'Just saying hello.' }, next: 'bye' },
+        ],
+      },
+      bye: {
+        text: { th: 'แวะมาบ่อย ๆ นะจ๊ะ', en: 'Come by any time, dear.' },
+      },
+    },
+  },
   line('somchai-greeting', {
     th: 'สวัสดีครับ มีนาทำก๋วยเตี๋ยวอร่อยที่สุดในถนนสายนี้เลยนะ',
     en: 'Hello there. Mina makes the best noodles on this street.',

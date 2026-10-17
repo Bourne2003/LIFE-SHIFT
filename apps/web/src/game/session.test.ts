@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CONTENT } from '@life-shift/game-data';
+import { START_CLOCK, weatherForDay } from '@life-shift/shared';
 import { GameSession, type SessionEvent } from './session';
 
 function finish(session: GameSession): void {
@@ -105,10 +106,99 @@ describe('GameSession', () => {
       quests: { 'minas-recipe': { status: 'completed' }, 'removed-quest': { status: 'completed' } },
       flags: { 'somchai-stall-open': true },
       npcs: { mina: { talks: 3 } },
+      money: 10,
+      inventory: { 'removed-item': 1 },
+      clock: START_CLOCK,
     });
+    expect(session.state.inventory).toEqual({}); // unknown items dropped
     expect(Object.keys(session.quests)).toEqual(['minas-recipe']);
     expect(session.visibleProps).toHaveLength(1);
     session.talkTo('mina');
     expect(session.conversation?.text.en).toMatch(/finally cooks it right/);
+  });
+
+  it('opens Aunt Daeng’s shop from dialogue and buys with the player’s money', () => {
+    const session = new GameSession(CONTENT);
+    const events: string[] = [];
+    session.on((e) => events.push(e.type));
+    session.talkTo('daeng');
+    session.advance(); // first choice: "let me see your goods"
+    expect(session.inConversation).toBe(false);
+    expect(session.inShop).toBe(true);
+    const shop = session.shopView!;
+    expect(shop.entries.map((e) => e.item)).toEqual([
+      'jasmine-garland',
+      'thai-iced-tea',
+      'mango-sticky-rice',
+    ]);
+
+    session.buySelected();
+    expect(session.state.inventory).toEqual({ 'jasmine-garland': 1 });
+    expect(session.state.money).toBe(50 - 20);
+    expect(events).toContain('purchased');
+    expect(session.shopView!.entries[0]!.owned).toBe(1);
+
+    session.moveSelection(-1); // wraps to the last entry (35 baht; 30 left)
+    expect(session.shopView!.selected).toBe(2);
+    expect(session.shopView!.entries[2]!.affordable).toBe(false);
+    session.buySelected();
+    expect(events).toContain('cannotAfford');
+    expect(session.state.money).toBe(30);
+
+    session.closeShop();
+    expect(session.inShop).toBe(false);
+  });
+
+  it('lists the bag and reports quest rewards as money received', () => {
+    const session = new GameSession(CONTENT, {
+      quests: { 'pims-garland': { status: 'active', step: 'bring' } },
+      flags: {},
+      npcs: {},
+      money: 0,
+      inventory: { 'jasmine-garland': 1 },
+      clock: START_CLOCK,
+    });
+    expect(session.inventory.map((e) => [e.item, e.count])).toEqual([['jasmine-garland', 1]]);
+    const received: number[] = [];
+    session.on((e) => e.type === 'moneyReceived' && received.push(e.amount));
+    session.talkTo('pim');
+    finish(session);
+    expect(session.inventory).toEqual([]);
+    expect(received).toEqual([30]);
+
+    session.toggleInventory();
+    expect(session.inventoryOpen).toBe(true);
+    session.toggleInventory();
+    expect(session.inventoryOpen).toBe(false);
+  });
+
+  it('lets time pass, but not while talking, and reports new phases as state changes', () => {
+    const session = new GameSession(CONTENT);
+    const events: string[] = [];
+    session.on((e) => events.push(e.type));
+    session.tick(90); // 08:00 -> 09:30
+    expect(session.environment).toMatchObject({ day: 1, minute: 9 * 60 + 30, phase: 'morning' });
+    expect(events).toContain('clockTick');
+    expect(events).not.toContain('stateChanged');
+
+    session.tick(60); // 10:30: morning -> day
+    expect(session.environment.phase).toBe('day');
+    expect(events).toContain('stateChanged');
+
+    session.talkTo('alex');
+    const frozen = session.environment.minute;
+    session.tick(120);
+    expect(session.environment.minute).toBe(frozen);
+  });
+
+  it('can jump the clock and exposes weather and darkness', () => {
+    const session = new GameSession(CONTENT);
+    session.setClock({ day: 1, minute: 23 * 60 });
+    expect(session.environment.phase).toBe('night');
+    expect(session.environment.darkness).toBeGreaterThan(0);
+    expect(session.visibleProps.map((p) => p.kind)).toContain('lantern');
+    session.setClock({ day: 5, minute: 12 * 60 });
+    expect(session.environment.weather).toBe(weatherForDay(5));
+    expect(session.environment.darkness).toBe(0);
   });
 });

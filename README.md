@@ -7,7 +7,10 @@ world changes in response to what you do. Runs on desktop, tablet and mobile bro
 install.
 
 **Status:** Milestone 3 — _World Memory_ — complete: finishing _Mina's Recipe_ opens a noodle
-stall in the city, NPCs remember you, and progress is saved automatically on the device. See [docs/GDD/vision.md](docs/GDD/vision.md)
+stall in the city, NPCs remember you, and progress is saved automatically on the device. The MVP
+economy is in: earn baht from quests, shop at Aunt Daeng's store, and check your bag. Days pass
+(one in-game day is 24 real minutes): nights are dark, the park lanterns light up, and some days it
+rains — and people notice. See [docs/GDD/vision.md](docs/GDD/vision.md)
 for the roadmap.
 
 ## Quick start
@@ -24,7 +27,8 @@ or open the game with `?lang=en` / `?lang=th`. The choice is remembered on the d
 
 Controls: **WASD / arrow keys** to move and **E / Space / Enter** to talk on desktop (arrow keys
 pick dialogue choices). On touch screens, **drag on the left side** of the screen for a virtual
-joystick, tap **Talk** near someone, and tap the dialogue box or a choice to continue.
+joystick, tap **Talk** near someone, and tap the dialogue box or a choice to continue. **I** (or the
+**Bag** button) opens your bag; in a shop, arrows + **E** buy and **Esc** closes.
 
 ### Play on another device on your network
 

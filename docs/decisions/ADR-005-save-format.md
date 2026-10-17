@@ -12,7 +12,9 @@ progress to a server, so the saved data must be the same shape the server will o
 
 - All persistent progress is one JSON-safe `GameState` (quests, world flags, NPC memory) plus
   the player's position. Nothing derived (text, sprites) is saved.
-- Save file: `{ version, savedAt, state, player }`, `SAVE_VERSION = 1`. Older versions are
+- Save file: `{ version, savedAt, state, player }`. Version 2 added money and inventory; v1 saves
+  are migrated with the starting money and an empty bag. Version 3 added the world clock (older
+  saves resume on day 1 at 08:00). Older versions are
   upgraded by a chain of migrations; saves from a newer version are refused, not guessed at.
 - Parsing (`parseSave`) never throws and drops individual invalid entries instead of rejecting
   the whole save. `reconcileState` then fits the state to current content (removed quests are

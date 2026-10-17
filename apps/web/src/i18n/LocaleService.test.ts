@@ -37,8 +37,9 @@ describe('UI strings', () => {
       const strings = UI_STRINGS[locale];
       expect(Object.keys(strings).sort(), locale).toEqual(keys);
       for (const [key, value] of Object.entries(strings)) {
-        const text = typeof value === 'function' ? value('X') : value;
-        expect(text.trim(), `${locale}.${key}`).not.toBe('');
+        const text =
+          typeof value === 'function' ? (value as (...a: unknown[]) => string)('X', 1) : value;
+        expect(String(text).trim(), `${locale}.${key}`).not.toBe('');
       }
     }
   });
@@ -46,8 +47,10 @@ describe('UI strings', () => {
   it('are actually translated (Thai strings contain Thai script)', () => {
     const thai = /[฀-๿]/;
     for (const [key, value] of Object.entries(UI_STRINGS.th)) {
-      if (key === 'switchLanguage' || key === 'switchLanguageAria') continue; // names the other language
-      const text = typeof value === 'function' ? value('X') : value;
+      // These name the other language, or are just a currency sign and a number.
+      if (['switchLanguage', 'switchLanguageAria', 'money'].includes(key)) continue;
+      const text =
+        typeof value === 'function' ? (value as (...a: unknown[]) => string)('X', 1) : value;
       expect(text, key).toMatch(thai);
     }
   });

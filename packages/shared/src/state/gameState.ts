@@ -1,4 +1,13 @@
+import { changeItem, itemCount, type Inventory } from '../items/items';
 import { completeStep, currentStep, questStatus, startQuest } from '../quests/quests';
+import {
+  START_CLOCK,
+  dayPhase,
+  weatherForDay,
+  type DayPhase,
+  type GameClock,
+  type Weather,
+} from '../world/time';
 import type { QuestDef, QuestLog, QuestStatus } from '../quests/quests';
 
 /** What an NPC remembers about the player. */
@@ -16,9 +25,24 @@ export interface GameState {
   /** World facts set by story effects, e.g. "somchai-stall-open". */
   readonly flags: Readonly<Record<string, boolean>>;
   readonly npcs: Readonly<Record<string, NpcMemory>>;
+  /** Baht. Never negative. */
+  readonly money: number;
+  readonly inventory: Inventory;
+  /** World time; weather follows from the day. */
+  readonly clock: GameClock;
 }
 
-export const INITIAL_STATE: GameState = Object.freeze({ quests: {}, flags: {}, npcs: {} });
+/** Money a new game starts with. */
+export const STARTING_MONEY = 50;
+
+export const INITIAL_STATE: GameState = Object.freeze({
+  quests: {},
+  flags: {},
+  npcs: {},
+  money: STARTING_MONEY,
+  inventory: {},
+  clock: START_CLOCK,
+});
 
 /** A fact about the game state that content can test. */
 export type StoryCondition =
@@ -27,13 +51,23 @@ export type StoryCondition =
   /** The world flag is set (or, with `is: false`, not set). */
   | { readonly flag: string; readonly is?: boolean }
   /** The player has (or has not) talked to this NPC before. */
-  | { readonly npc: string; readonly met: boolean };
+  | { readonly npc: string; readonly met: boolean }
+  /** The player carries at least `count` (default 1) of the item — or, with `has: false`, fewer. */
+  | { readonly item: string; readonly count?: number; readonly has?: boolean }
+  /** It is currently one of these times of day. */
+  | { readonly phase: readonly DayPhase[] }
+  /** Today's weather is this. */
+  | { readonly weather: Weather };
 
 /** A change to game state triggered by content (dialogue, quest completion). */
 export type StoryEffect =
   | { readonly type: 'startQuest'; readonly quest: string }
   | { readonly type: 'completeStep'; readonly quest: string; readonly step: string }
-  | { readonly type: 'setFlag'; readonly flag: string; readonly value?: boolean };
+  | { readonly type: 'setFlag'; readonly flag: string; readonly value?: boolean }
+  /** Gives (positive) or takes (negative) items; taking never goes below zero. */
+  | { readonly type: 'changeItem'; readonly item: string; readonly count: number }
+  /** Gives (positive) or takes (negative) money; never goes below zero. */
+  | { readonly type: 'changeMoney'; readonly amount: number };
 
 export type QuestCatalog = Readonly<Record<string, QuestDef>>;
 
@@ -47,6 +81,9 @@ export function conditionHolds(state: GameState, c: StoryCondition): boolean {
     return c.step === undefined || currentStep(state.quests, c.quest) === c.step;
   }
   if ('flag' in c) return (state.flags[c.flag] ?? false) === (c.is ?? true);
+  if ('phase' in c) return c.phase.includes(dayPhase(state.clock.minute));
+  if ('weather' in c) return weatherForDay(state.clock.day) === c.weather;
+  if ('item' in c) return itemCount(state.inventory, c.item) >= (c.count ?? 1) === (c.has ?? true);
   return hasMet(state, c.npc) === c.met;
 }
 
@@ -69,6 +106,16 @@ export function applyEffects(
       const value = effect.value ?? true;
       if ((result.flags[effect.flag] ?? false) !== value)
         result = { ...result, flags: { ...result.flags, [effect.flag]: value } };
+      continue;
+    }
+    if (effect.type === 'changeItem') {
+      const inventory = changeItem(result.inventory, effect.item, effect.count);
+      if (inventory !== result.inventory) result = { ...result, inventory };
+      continue;
+    }
+    if (effect.type === 'changeMoney') {
+      const money = Math.max(0, result.money + effect.amount);
+      if (money !== result.money) result = { ...result, money };
       continue;
     }
     const quest = quests[effect.quest];
